@@ -25,8 +25,8 @@ import lombok.Setter;
 @Component
 public class CovidCommandHandler implements CommandHandler {
   
-  private static final URI API_URL_ALL = URI.create("https://corona.lmao.ninja/all");
-  private static final URI API_URL_COUNTRY = URI.create("https://corona.lmao.ninja/countries/");
+  private static final URI API_URL_ALL = URI.create("https://corona.lmao.ninja/v2/all");
+  private static final URI API_URL_COUNTRY = URI.create("https://corona.lmao.ninja/v2/countries/");
 
   private static final Command CMD_COVID = new Command("covid", "Usage: !covid [<country>] - get covid stats");
   
