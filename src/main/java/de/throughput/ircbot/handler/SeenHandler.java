@@ -101,17 +101,17 @@ public class SeenHandler implements CommandHandler, MessageHandler {
     if (years > 0L) {
       sb.append(years).append("y").append(" ");
     }
-    if (duration.toDaysPart() > 0) {
-      sb.append(duration.toDaysPart()).append("d").append(" ");
+    if (duration.toDaysPart() % 365 > 0) {
+      sb.append(duration.toDaysPart() % 365).append("d").append(" ");
     }
     if (duration.toHoursPart() > 0) {
       sb.append(duration.toHoursPart()).append("h").append(" ");
     }
     if (duration.toMinutesPart() > 0) {
-      sb.append(duration.toHoursPart()).append("m").append(" ");
+      sb.append(duration.toMinutesPart()).append("m").append(" ");
     }
     if (duration.toSecondsPart() > 0) {
-      sb.append(duration.toHoursPart()).append("s").append(" ");
+      sb.append(duration.toSecondsPart()).append("s").append(" ");
     }
     if (sb.length() == 0) {
       sb.append("0s");
