@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class HtmlTitleUrlProcessor implements UrlProcessor {
 
-  private static final Pattern HTML_TITLE_PATTERN = Pattern.compile(".*<title>([^<]+)</title>.*");
+  private static final Pattern HTML_TITLE_PATTERN = Pattern.compile(".<head>.*<title>([^<]+)</title>.*</head>.*");
   
   private static final Pattern URL_GITHUB = Pattern.compile("^https://github.com/.*$");
   private static final Pattern URL_AVHERALD = Pattern.compile("^https?://(?:www\\.)?avherald.com/.*$");
@@ -60,7 +60,7 @@ public class HtmlTitleUrlProcessor implements UrlProcessor {
     if (response.statusCode() == 200) {
       Matcher matcher = HTML_TITLE_PATTERN.matcher(response.body().replaceAll("[\\n\\r]+", " "));
       if (matcher.find()) {
-        String title = matcher.group(1);
+        String title = matcher.group(1).trim();
         if (title.length() > 600) {
           title = title.substring(0, 600) + "(...)";
         }
