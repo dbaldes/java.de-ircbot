@@ -58,7 +58,7 @@ public class HtmlTitleUrlProcessor implements UrlProcessor {
   
   private void processHttpResonse(GenericMessageEvent event, URI uri, HttpResponse<String> response) {
     if (response.statusCode() == 200) {
-      Matcher matcher = HTML_TITLE_PATTERN.matcher(response.body());
+      Matcher matcher = HTML_TITLE_PATTERN.matcher(response.body().replaceAll("[\\n\\r]+", " "));
       if (matcher.find()) {
         String title = matcher.group(1);
         if (title.length() > 600) {
