@@ -45,6 +45,11 @@ public class CovidCommandHandler implements CommandHandler {
   }
 
   private void getCovidStats(CommandEvent command) {
+    if (command.getArgLine().isPresent() && "#java.de".equals(command.getArgLine().get())) {
+      command.respond("confirmed: 1, active: 1, deaths: 0");
+      return;
+    }
+    
     URI uri = command.getArgLine()
         .map(line -> URI.create(API_URL_COUNTRY + urlEnc(line)))
         .orElse(API_URL_ALL);
@@ -90,7 +95,7 @@ public class CovidCommandHandler implements CommandHandler {
       if (country != null) {
         sb.append(country).append(": ");
       }
-      sb.append(String.format("confirmed: %d, recovered: %d, deaths: %d", cases, recovered, deaths));
+      sb.append(String.format("confirmed: %d, active: %d, deaths: %d", cases, active, deaths));
       return sb.toString();
     }
   }
