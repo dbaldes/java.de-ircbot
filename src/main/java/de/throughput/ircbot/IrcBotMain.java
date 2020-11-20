@@ -25,6 +25,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeRequestInitializer;
 
+import twitter4j.Twitter;
+import twitter4j.TwitterFactory;
+import twitter4j.conf.ConfigurationBuilder;
+
 @SpringBootApplication
 @EnableRabbit
 @EnableScheduling
@@ -145,4 +149,16 @@ public class IrcBotMain {
     return youTube;
   }
 
+  @Bean
+  public Twitter twitter(@Value("${twitter.apiKey}") String apiKey, @Value("${twitter.apiSecretKey}") String apiSecretKey, @Value("${twitter.accessToken}") String accessToken, @Value("${twitter.accessTokenSecret}") String accessTokenSecret) {
+    ConfigurationBuilder cb = new ConfigurationBuilder();
+    cb.setOAuthConsumerKey(apiKey)
+      .setOAuthConsumerSecret(apiSecretKey)
+      .setOAuthAccessToken(accessToken)
+      .setOAuthAccessTokenSecret(accessTokenSecret);
+    
+    TwitterFactory tf = new TwitterFactory(cb.build());
+    return tf.getInstance();
+  }
+  
 }
