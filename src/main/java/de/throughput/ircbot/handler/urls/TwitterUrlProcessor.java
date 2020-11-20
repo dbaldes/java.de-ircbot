@@ -31,7 +31,7 @@ public class TwitterUrlProcessor implements UrlProcessor {
     try {
       Status status = twitter.showStatus(Long.parseLong(tweetId));
 
-      event.respond(String.format("^ @%s on twitter: '%s'", status.getUser().getScreenName(), status.getText()));
+      event.respond(String.format("^ @%s on twitter: %s", status.getUser().getScreenName(), status.getText()));
     } catch (TwitterException e) {
       event.respond("that didn't work: " + e.getMessage());
     }
