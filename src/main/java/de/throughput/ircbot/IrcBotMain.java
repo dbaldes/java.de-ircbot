@@ -43,13 +43,20 @@ public class IrcBotMain {
   }
 
   @Bean
-  public CommandLineRunner configure(Configuration configuration) {
+  public CommandLineRunner configure(PircBotX bot) {
     
     return (String ... arguments) -> {
-      try (PircBotX bot = new PircBotX(configuration)) {
+      try {
         bot.startBot();
+      } finally {
+        bot.close();
       }
     };
+  }
+  
+  @Bean
+  PircBotX bot(Configuration configuration) {
+    return new PircBotX(configuration);
   }
 
   /**

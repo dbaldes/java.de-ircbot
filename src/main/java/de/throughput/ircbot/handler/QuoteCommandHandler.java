@@ -135,7 +135,7 @@ public class QuoteCommandHandler implements CommandHandler, MessageHandler {
   /**
    * Stores the message as quote in the database.
    * 
-   * @param event message event
+   * @param message the message
    */
   private void storeQuote(QuoteMessage message) {
     jdbc.update("INSERT INTO quote (nick, channel, message) VALUES (?, ?, ?)",
@@ -147,7 +147,7 @@ public class QuoteCommandHandler implements CommandHandler, MessageHandler {
    * 
    * @param channel channel
    * @param nick nick
-   * @return quote or null if none found
+   * @return the quote, if any
    */
   private Optional<QuoteMessage> lookupRandomQuote(String channel, String nick) {
     try {
@@ -166,7 +166,6 @@ public class QuoteCommandHandler implements CommandHandler, MessageHandler {
    * Reads a random quote from the database.
    * 
    * @param channel channel
-   * @param nick nick
    * @return quote or null if none found
    */
   private Optional<QuoteMessage> lookupRandomQuote(String channel) {
