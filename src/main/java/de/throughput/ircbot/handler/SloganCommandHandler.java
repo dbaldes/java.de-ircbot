@@ -152,14 +152,14 @@ public class SloganCommandHandler implements CommandHandler {
    * Gets a list of active channels where the bot is allowed to talk.
    * 
    * A channel is considered active if three different users have spoken
-   * during the last three minutes.
+   * during the last ten minutes.
    * 
    * @return active channel names
    */
   private Set<String> readActiveTalkChannels() {
     return jdbc.queryForList(
         "SELECT channel FROM seen "
-        + "WHERE timestamp > NOW() - INTERVAL '3 minutes' "
+        + "WHERE timestamp > NOW() - INTERVAL '10 minutes' "
         + "GROUP BY channel "
         + "HAVING COUNT(nick) > 2;", String.class).stream()
       .filter(channel -> botConfig.getTalkChannels().contains(channel))
