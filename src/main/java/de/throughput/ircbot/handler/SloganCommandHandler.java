@@ -39,6 +39,12 @@ public class SloganCommandHandler implements CommandHandler {
    */
   private static final float P_RANDOM_SLOGAN = 0.1f;
   
+  /**
+   * After posting a random slogan, the bot will keep quiet on all channels for 
+   * at least this many seconds.
+   */
+  private static final long RANDOM_SLOGAN_COOLDOWN_SECONDS = 600;
+  
   private static final Command CMD_SLOGAN = new Command("slogan",
       "!slogan - enhance morale of the plebs by shouting a slogan.");
   
@@ -53,6 +59,7 @@ public class SloganCommandHandler implements CommandHandler {
   private final PircBotX bot;
   private final Random rnd = new Random();
   
+  private long lastSloganTimestampEpochMillis = 0L;
   
   @Autowired
   public SloganCommandHandler(IrcBotConfig botConfig, JdbcTemplate jdbc, @Lazy PircBotX bot) {
@@ -141,11 +148,15 @@ public class SloganCommandHandler implements CommandHandler {
    */
   @Scheduled(fixedDelay = 60000)
   public void scheduledRandomSlogan() {
-    readActiveTalkChannels().forEach(channel -> {
-      if (rnd.nextFloat() <= P_RANDOM_SLOGAN) {
-        lookupRandomSlogan(channel).ifPresent(slogan -> bot.send().message(channel, slogan.getSlogan()));
-      }
-    });
+    long currentTimeEpochMillis = System.currentTimeMillis();
+    if (currentTimeEpochMillis - lastSloganTimestampEpochMillis > RANDOM_SLOGAN_COOLDOWN_SECONDS * 1000L) {
+      readActiveTalkChannels().forEach(channel -> {
+        if (rnd.nextFloat() <= P_RANDOM_SLOGAN) {
+          lastSloganTimestampEpochMillis = currentTimeEpochMillis;
+          lookupRandomSlogan(channel).ifPresent(slogan -> bot.send().message(channel, slogan.getSlogan()));
+        }
+      });
+    }
   }
   
   /**
