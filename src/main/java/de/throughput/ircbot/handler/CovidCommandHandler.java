@@ -1,12 +1,12 @@
 package de.throughput.ircbot.handler;
 
+import static de.throughput.ircbot.Util.urlEnc;
+
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -77,9 +77,7 @@ public class CovidCommandHandler implements CommandHandler {
 
     HttpClient.newHttpClient()
         .sendAsync(request, BodyHandlers.ofString())
-        .thenAccept(httpResponse -> {
-          processResponse(command, httpResponse);
-        });
+        .thenAccept(httpResponse -> processResponse(command, httpResponse));
   }
 
   private void processResponse(CommandEvent command, HttpResponse<String> httpResponse) {
@@ -118,7 +116,4 @@ public class CovidCommandHandler implements CommandHandler {
     }
   }
 
-  private static String urlEnc(String arg) {
-    return URLEncoder.encode(arg, StandardCharsets.UTF_8);
-  }
 }
