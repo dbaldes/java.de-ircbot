@@ -8,9 +8,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Currency;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -32,14 +36,16 @@ import lombok.Setter;
 @Component
 public class CryptoCommandHandler implements CommandHandler {
   
-  private static final String USD = "USD";
-
+  private static final Pattern PATTERN_QUOTE_CURRENCY = Pattern.compile("^(.*)\\s+in\\s+(\\w+)\\s*$");
   private static final BigDecimal ONE_HUNDREDTH = new BigDecimal("0.01");
-
-  private static final Command CMD_CRYPTO = new Command("crypto", "crypto <symbols> - get price information on crypto currencies");
+  private static final BigDecimal ONE_TENHOUSANDTH = new BigDecimal("0.0001");
+  
+  private static final String USD = "USD";
   
   private static final String API_URL_QUOTES_LATEST = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest";
   private final String cmcApiKey;
+
+  private static final Command CMD_CRYPTO = new Command("crypto", "crypto <symbols> [in <symbol>] - get price information on crypto currencies");
   
   public CryptoCommandHandler(@Value("${coinmarketcap.api.key}") String cmcApiKey) {
     this.cmcApiKey = cmcApiKey;
@@ -53,20 +59,30 @@ public class CryptoCommandHandler implements CommandHandler {
   @Override
   public boolean onCommand(CommandEvent command) {
     command.getArgLine()
-      .map(this::sanitizeSymbolList)
+      .map(this::toCmcQuery)
       .ifPresentOrElse(
-          symbols -> getPriceInfo(command, symbols),
+          query -> getPriceInfo(command, query),
           () -> command.respond(command.getCommand().getUsage()));
     
     return true;
   }
 
-  private String sanitizeSymbolList(String input) {
-    return String.join(",", input.toUpperCase(Locale.ROOT).split("[\\s,;|]+"));
+  private CmcLatestQuoteQuery toCmcQuery(String input) {
+    var query = new CmcLatestQuoteQuery();
+    Matcher matcher = PATTERN_QUOTE_CURRENCY.matcher(input);
+    String symbols = input;
+    if (matcher.matches()) {
+      query.setConvert(matcher.group(2).toUpperCase());
+      symbols = matcher.group(1);
+    } else {
+      query.setConvert(USD);
+    }
+    query.setSymbol(String.join(",", symbols.toUpperCase(Locale.ROOT).split("[\\s,;|]+")));
+    return query;
   }
 
-  private void getPriceInfo(CommandEvent command, String symbols) {
-    URI uri =  URI.create(API_URL_QUOTES_LATEST + "?symbol=" + urlEnc(symbols) + "&convert=" + USD);
+  private void getPriceInfo(CommandEvent command, CmcLatestQuoteQuery query) {
+    URI uri =  URI.create(API_URL_QUOTES_LATEST + "?" + query.toQueryString());
     
     HttpRequest request = HttpRequest.newBuilder(uri)
         .header("X-CMC_PRO_API_KEY", cmcApiKey)
@@ -99,16 +115,46 @@ public class CryptoCommandHandler implements CommandHandler {
     return response.getDataByCryptoSymbol().values().stream()
         .sorted((a, b) -> a.getSymbol().compareTo(b.getSymbol()))
         .map(c -> {
-          CmcQuote usdQuote = c.getQuoteByFiatSymbol().get(USD);
-          int precision = 2;
-          if (usdQuote.getPrice().compareTo(ONE_HUNDREDTH) < 0) {
-            precision = 6;
-          } else if (usdQuote.getPrice().compareTo(BigDecimal.ONE) < 0) {
-            precision = 4;
-          }
-          return String.format("%s: $%." + precision + "f (%.1f%%)", c.getSymbol(), usdQuote.getPrice(), usdQuote.getPercentChange24h());
+          Entry<String, CmcQuote> currencyQuote = c.getQuoteByFiatSymbol().entrySet().iterator().next();
+          String quoteCurrencyCode = currencyQuote.getKey();
+          CmcQuote quote = currencyQuote.getValue();
+          return String.format("%s: %s (%.1f%%)", c.getSymbol(), renderPrice(quote.getPrice(), quoteCurrencyCode), quote.getPercentChange24h());
         })
         .collect(Collectors.joining(" "));
+  }
+
+  private static String renderPrice(BigDecimal price, String currencyCode) {
+    int precision = 2;
+    if (price.compareTo(ONE_TENHOUSANDTH) < 0) {
+      precision = 8;
+    } else if (price.compareTo(ONE_HUNDREDTH) < 0) {
+      precision = 6;
+    } else if (price.compareTo(BigDecimal.ONE) < 0) {
+      precision = 4;
+    }
+    
+    String currencySymbol = currencyCode;
+    try {
+      Currency currency = Currency.getInstance(currencyCode);
+      currencySymbol = currency.getSymbol(Locale.US);
+    } catch (IllegalArgumentException e) {
+      // ignore; it might be a crypto currency
+    }
+    if (currencySymbol.endsWith("$")) {
+      return String.format("%s%." + precision + "f", currencySymbol, price);
+    }
+    return String.format("%." + precision + "f%s", price, currencySymbol);
+  }
+  
+  @Getter
+  @Setter
+  private class CmcLatestQuoteQuery {
+    private String symbol;
+    private String convert;
+    
+    public String toQueryString() {
+      return "symbol=" + urlEnc(getSymbol()) + "&convert=" + urlEnc(getConvert());
+    }
   }
   
   @Getter
