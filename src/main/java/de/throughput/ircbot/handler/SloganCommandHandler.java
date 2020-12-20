@@ -13,6 +13,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import de.throughput.ircbot.IrcBotConfig;
 import de.throughput.ircbot.api.Command;
@@ -75,6 +76,7 @@ public class SloganCommandHandler implements CommandHandler {
   }
   
   @Override
+  @Transactional
   public boolean onCommand(CommandEvent command) {
 
     if (CMD_SLOGAN.equals(command.getCommand())) {
@@ -84,9 +86,13 @@ public class SloganCommandHandler implements CommandHandler {
             () -> command.respond("No slogan found. Add a slogan with !addslogan <slogan>."));
     } else if (CMD_ADDSLOGAN.equals(command.getCommand())) {
       command.getArgLine().ifPresentOrElse(
-          argLine -> {
-            storeSlogan(command.getEvent().getChannel().getName(), command.getEvent().getUser().getNick(), argLine);
-            command.respond("of course, comrade!");
+          slogan -> {
+            if (!sloganExists(command.getEvent().getChannel().getName(), slogan)) {
+              storeSlogan(command.getEvent().getChannel().getName(), command.getEvent().getUser().getNick(), slogan);
+              command.respond("of course, comrade!");
+            } else {
+              command.respond("I know, comrade, I know!");
+            }
           },
           () -> command.respond(CMD_ADDSLOGAN.getUsage()));
     } else if (CMD_RMSLOGAN.equals(command.getCommand())) {
@@ -103,6 +109,17 @@ public class SloganCommandHandler implements CommandHandler {
     return false;
   }
 
+  /**
+   * Tells if the given slogan already exists in the given channel.
+   * 
+   * @param channel the channel
+   * @param slogan the slogan
+   * @return true if the slogan exists
+   */
+  private boolean sloganExists(String channel, String slogan) {
+    return jdbc.queryForObject("SELECT count(*) FROM slogan WHERE channel = ? AND slogan = ?", new Object[] {channel, slogan}, Integer.class) > 0;
+  }
+  
   /**
    * Stores a slogan in the database.
    * 
