@@ -17,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.pircbotx.Colors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +46,7 @@ public class CryptoCommandHandler implements CommandHandler {
   private static final String API_URL_QUOTES_LATEST = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest";
   private final String cmcApiKey;
 
-  private static final Command CMD_CRYPTO = new Command("crypto", "crypto <symbols> [in <symbol>] - get price information on crypto currencies");
+  private static final Command CMD_CRYPTO = new Command("crypto", "crypto <symbols> [in <currency>] - get price information on crypto currencies");
   
   public CryptoCommandHandler(@Value("${coinmarketcap.api.key}") String cmcApiKey) {
     this.cmcApiKey = cmcApiKey;
@@ -118,9 +119,11 @@ public class CryptoCommandHandler implements CommandHandler {
           Entry<String, CmcQuote> currencyQuote = c.getQuoteByFiatSymbol().entrySet().iterator().next();
           String quoteCurrencyCode = currencyQuote.getKey();
           CmcQuote quote = currencyQuote.getValue();
-          return String.format("%s: %s (%.1f%%)", c.getSymbol(), renderPrice(quote.getPrice(), quoteCurrencyCode), quote.getPercentChange24h());
+          String priceColor = quote.getPercentChange24h().compareTo(BigDecimal.ZERO) >= 0 ? Colors.GREEN : Colors.RED;
+          return String.format("%s: %s%s (%+.1f%%)%s", c.getSymbol(), priceColor,  renderPrice(quote.getPrice(), quoteCurrencyCode), quote.getPercentChange24h(), Colors.NORMAL);
         })
-        .collect(Collectors.joining(" "));
+        .collect(Collectors.joining(" "))
+        + " (\u039424h)";
   }
 
   private static String renderPrice(BigDecimal price, String currencyCode) {
