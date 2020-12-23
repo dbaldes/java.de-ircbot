@@ -1,13 +1,13 @@
 package de.throughput.ircbot.handler.urls;
 
-import static org.junit.Assert.assertThat;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.hamcrest.core.Is;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class UrlParserTest {
   
@@ -42,7 +42,7 @@ public class UrlParserTest {
     
     List<String> urls = UrlParser.streamUrls(text).collect(Collectors.toList());
     
-    assertThat(urls, Is.is(URLS));
+    assertEquals(urls, URLS);
   }
   
   private static String text() {

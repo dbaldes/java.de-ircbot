@@ -1,13 +1,13 @@
 package de.throughput.ircbot.handler.urls;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 
 public class FefeUrlProcessorTest {
 
@@ -25,8 +25,9 @@ public class FefeUrlProcessorTest {
     Pattern pattern = processor.getUrlPatterns().iterator().next();
     for (String url : FEFE_URLS) {
       Matcher matcher = pattern.matcher(url);
-      assertThat(matcher.matches(), is(true));
-      assertThat(matcher.group(1), is("b5258fc3"));
+      
+      assertEquals(matcher.matches(), true);
+      assertEquals(matcher.group(1), "b5258fc3");
     }
   }
   
@@ -37,7 +38,7 @@ public class FefeUrlProcessorTest {
     Pattern pattern = processor.getUrlPatterns().iterator().next();
     for (String url : NOT_FEFE_URLS) {
       Matcher matcher = pattern.matcher(url);
-      assertThat(String.format("%s should not match", url), matcher.matches(), is(false));
+      assertEquals(matcher.matches(), false);
     }
   }
 }
