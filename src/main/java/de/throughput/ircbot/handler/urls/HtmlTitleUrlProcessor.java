@@ -1,74 +1,41 @@
 package de.throughput.ircbot.handler.urls;
 
+import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import org.jsoup.HttpStatusException;
+import org.jsoup.Jsoup;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.springframework.stereotype.Component;
 
 /**
  * Gets a preview for various web sites by looking at the HTML title tag.
+ * 
+ * Does not implement {@link UrlProcessor} - serves as fallback if no specific processor matched.
  */
 @Component
-public class HtmlTitleUrlProcessor implements UrlProcessor {
+public class HtmlTitleUrlProcessor {
+  
+  private static final int READ_TIMEOUT_MS = 3000;
+  private static final String MOZILLA_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36";
 
-  private static final Pattern HTML_TITLE_PATTERN = Pattern.compile(".<head>.*<title>([^<]+)</title>.*</head>.*");
-  
-  private static final Pattern URL_GITHUB = Pattern.compile("^https://github.com/.*$");
-  private static final Pattern URL_AVHERALD = Pattern.compile("^https?://(?:www\\.)?avherald.com/.*$");
-  private static final Pattern URL_SPIEGEL = Pattern.compile("^https?://(?:www\\.)?spiegel.de/.*$");
-  private static final Pattern URL_HEISE = Pattern.compile("^https?://(?:www\\.)?heise.de/.*$");
-  
-  @Override
-  public Set<Pattern> getUrlPatterns() {
-    return Set.of(URL_GITHUB, URL_AVHERALD, URL_SPIEGEL, URL_HEISE);
-  }
-
-  @Override
-  public void process(Matcher matcher, GenericMessageEvent event) {
-    String url = matcher.group(0);
-    
-    processHtmlTitle(event, url);
-  }
-  
-  private void processHtmlTitle(GenericMessageEvent event, String url) {
+  public void process(String url, GenericMessageEvent event) {
     try {
       URI uri = URI.create(url);
-      HttpRequest request = HttpRequest.newBuilder(uri)
-          .setHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36" )
-          .setHeader("Accept-Language", "en-US,en;q=0.9") 
-          .setHeader("Accept-Encoding", "identity")
-          .setHeader("DNT", "1")
-          .GET().build();
-      
-      HttpClient.newHttpClient()
-          .sendAsync(request, BodyHandlers.ofString())
-          .thenAccept(response -> processHttpResonse(event, uri, response));
-      
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-  
-  private void processHttpResonse(GenericMessageEvent event, URI uri, HttpResponse<String> response) {
-    if (response.statusCode() == 200) {
-      Matcher matcher = HTML_TITLE_PATTERN.matcher(response.body().replaceAll("[\\n\\r]+", " "));
-      if (matcher.find()) {
-        String title = matcher.group(1).trim();
-        if (title.length() > 600) {
-          title = title.substring(0, 600) + "(...)";
-        }
-        String message = String.format("^ %s: '%s'", uri.getHost(), title);
-        event.respond(message);
+      String title = Jsoup.connect(url)
+          .userAgent(MOZILLA_USER_AGENT)
+          .header("Accept-Language", "en-US,en;q=0.9")
+          .timeout(READ_TIMEOUT_MS)
+          .get().title();
+      if (title.length() > 600) {
+        title = title.substring(0, 600) + "(...)";
       }
-    } else {
-      event.respond("" + response.statusCode());
+      String message = String.format("^ %s: '%s'", uri.getHost(), title);
+      event.respond(message);
+    } catch (HttpStatusException e) {
+      event.respond("" + e.getStatusCode());
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
   
