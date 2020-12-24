@@ -52,30 +52,37 @@ public class IrcBotConversationListener extends ListenerAdapter {
     if (nick.equals(event.getBot().getNick())) {
       return; // don't listen to ourselves
     }
+    if (rateLimiter.ignore(nick)) {
+      return;
+    }
+
+    boolean rateLimitExceeded = rateLimiter.limit(nick);
     
     String channel = event.getChannel().getName();
     String message = event.getMessage().trim();
     if (message.startsWith(COMMAND_PREFIX) && isTalkChannel(channel)) {
-      if (rateLimiter.limit(nick)) {
-        event.respond("hold it!");
-      } else {
-        String[] parts = message.substring(1).trim().split("\\s", 2);
-        String command = parts[0];
-        String argLine = parts.length > 1 ? parts[1] : null;
-
-        Pair<Command, CommandHandler> handler = commandHandlersByCommand.get(command);
-        if (handler != null) {
-          CommandEvent cmdEvent = new CommandEvent(event, handler.getLeft(), Optional.ofNullable(argLine));
-          handler.getRight().onCommand(cmdEvent);
-        }
+      if (rateLimitExceeded) {
+        event.respond("take a break!");
+        return;
       }
+      String[] parts = message.substring(1).trim().split("\\s", 2);
+      String command = parts[0];
+      String argLine = parts.length > 1 ? parts[1] : null;
+
+      Pair<Command, CommandHandler> handler = commandHandlersByCommand.get(command);
+      if (handler != null) {
+        CommandEvent cmdEvent = new CommandEvent(event, handler.getLeft(), Optional.ofNullable(argLine));
+        handler.getRight().onCommand(cmdEvent);
+      }
+    } else if (rateLimitExceeded) {
+      return;
     }
     
     for (MessageHandler handler : messageHandlers) {
       if (!handler.isOnlyTalkChannels() || isTalkChannel(channel)) {
-        if (handler.onMessage(event)) {
-          return;
-        }
+          if (handler.onMessage(event)) {
+            return;
+          }
       }
     }
   }
