@@ -3,7 +3,9 @@ package de.throughput.ircbot;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.pircbotx.hooks.ListenerAdapter;
@@ -69,11 +71,19 @@ public class IrcBotConversationListener extends ListenerAdapter {
       String command = parts[0];
       String argLine = parts.length > 1 ? parts[1] : null;
 
-      Pair<Command, CommandHandler> handler = commandHandlersByCommand.get(command);
-      if (handler != null) {
+      List<Pair<Command, CommandHandler>> matches = commandHandlersByCommand.entrySet().stream()
+          .filter(entry -> entry.getKey().startsWith(command))
+          .map(Entry::getValue)
+          .sorted((a, b) -> a.getLeft().getCommand().compareTo(b.getLeft().getCommand())).collect(Collectors.toList());
+      
+      if (matches.size() == 1) {
+        Pair<Command, CommandHandler> handler = matches.get(0);
         CommandEvent cmdEvent = new CommandEvent(event, handler.getLeft(), Optional.ofNullable(argLine));
         handler.getRight().onCommand(cmdEvent);
+      } else if (matches.size() > 1) {
+        event.respond("possible matches: " + matches.stream().map(match -> COMMAND_PREFIX + match.getLeft().getCommand()).collect(Collectors.joining(", ")));
       }
+
     } else if (rateLimitExceeded) {
       return;
     }
