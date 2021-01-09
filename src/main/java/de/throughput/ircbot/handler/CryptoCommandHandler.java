@@ -38,6 +38,7 @@ import lombok.Setter;
 public class CryptoCommandHandler implements CommandHandler {
   
   private static final Pattern PATTERN_QUOTE_CURRENCY = Pattern.compile("^(.*)\\s+in\\s+(\\w+)\\s*$");
+  private static final Pattern PATTERN_AMOUNT = Pattern.compile("^(\\d*(\\.\\d+)?)\\s+(.*)$");
   private static final BigDecimal ONE_HUNDREDTH = new BigDecimal("0.01");
   private static final BigDecimal ONE_TENHOUSANDTH = new BigDecimal("0.0001");
   
@@ -46,7 +47,8 @@ public class CryptoCommandHandler implements CommandHandler {
   private static final String API_URL_QUOTES_LATEST = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest";
   private final String cmcApiKey;
 
-  private static final Command CMD_CRYPTO = new Command("crypto", "crypto <symbols> [in <currency>] - get price information on crypto currencies");
+  private static final Command CMD_CRYPTO = new Command("crypto", "crypto [<amount>] <symbols> [in <currency>] - "
+      + "get price information on crypto currencies - currency defaults to USD, amount to 1");
   
   public CryptoCommandHandler(@Value("${coinmarketcap.api.key}") String cmcApiKey) {
     this.cmcApiKey = cmcApiKey;
@@ -78,6 +80,11 @@ public class CryptoCommandHandler implements CommandHandler {
     } else {
       query.setConvert(USD);
     }
+    matcher = PATTERN_AMOUNT.matcher(symbols);
+    if (matcher.matches()) {
+      query.setAmount(new BigDecimal(matcher.group(1)));
+      symbols = matcher.group(3);
+    }
     query.setSymbol(String.join(",", symbols.toUpperCase(Locale.ROOT).split("[\\s,;|]+")));
     return query;
   }
@@ -92,15 +99,15 @@ public class CryptoCommandHandler implements CommandHandler {
 
     HttpClient.newHttpClient()
         .sendAsync(request, BodyHandlers.ofString())
-        .thenAccept(httpResponse -> processResponse(command, httpResponse));
+        .thenAccept(httpResponse -> processResponse(command, httpResponse, query.getAmount()));
   }
   
-  private void processResponse(CommandEvent command, HttpResponse<String> httpResponse) {
+  private void processResponse(CommandEvent command, HttpResponse<String> httpResponse, BigDecimal amount) {
     try {
       CmcResponse response = new Gson().fromJson(httpResponse.body(), CmcResponse.class);
       if (httpResponse.statusCode() == 200) {
         if (response != null) {
-          command.respond(toMessage(response));
+          command.respond(toMessage(response, amount));
         } else {
           command.respond("that didn't work");
         }
@@ -112,7 +119,7 @@ public class CryptoCommandHandler implements CommandHandler {
     }
   }
 
-  private static String toMessage(CmcResponse response) {
+  private static String toMessage(CmcResponse response, BigDecimal amount) {
     return response.getDataByCryptoSymbol().values().stream()
         .sorted((a, b) -> a.getSymbol().compareTo(b.getSymbol()))
         .map(c -> {
@@ -120,19 +127,25 @@ public class CryptoCommandHandler implements CommandHandler {
           String quoteCurrencyCode = currencyQuote.getKey();
           CmcQuote quote = currencyQuote.getValue();
           String priceColor = quote.getPercentChange24h().compareTo(BigDecimal.ZERO) >= 0 ? Colors.GREEN : Colors.RED;
-          return String.format("%s: %s%s (%+.1f%%)%s", c.getSymbol(), priceColor,  renderPrice(quote.getPrice(), quoteCurrencyCode), quote.getPercentChange24h(), Colors.NORMAL);
+          return String.format("%s: %s%s (%+.1f%%)%s", renderSymbol(amount, c.getSymbol()), priceColor,  renderPrice(amount, quote.getPrice(), quoteCurrencyCode), quote.getPercentChange24h(), Colors.NORMAL);
         })
         .collect(Collectors.joining(" "))
         + " (\u039424h)";
   }
+  
+  private static String renderSymbol(BigDecimal amount, String symbol) {
+    return amount.compareTo(BigDecimal.ONE) != 0 ? amount.toPlainString() + " " + symbol : symbol;
+  }
 
-  private static String renderPrice(BigDecimal price, String currencyCode) {
+  private static String renderPrice(BigDecimal amount, BigDecimal price, String currencyCode) {
+    BigDecimal total = price.multiply(amount);
+    
     int precision = 2;
-    if (price.compareTo(ONE_TENHOUSANDTH) < 0) {
+    if (total.compareTo(ONE_TENHOUSANDTH) < 0) {
       precision = 8;
-    } else if (price.compareTo(ONE_HUNDREDTH) < 0) {
+    } else if (total.compareTo(ONE_HUNDREDTH) < 0) {
       precision = 6;
-    } else if (price.compareTo(BigDecimal.ONE) < 0) {
+    } else if (total.compareTo(BigDecimal.ONE) < 0) {
       precision = 4;
     }
     
@@ -144,9 +157,9 @@ public class CryptoCommandHandler implements CommandHandler {
       // ignore; it might be a crypto currency
     }
     if (currencySymbol.endsWith("$")) {
-      return String.format("%s%." + precision + "f", currencySymbol, price);
+      return String.format("%s%." + precision + "f", currencySymbol, total);
     }
-    return String.format("%." + precision + "f%s", price, currencySymbol);
+    return String.format("%." + precision + "f%s", total, currencySymbol);
   }
   
   @Getter
@@ -154,6 +167,7 @@ public class CryptoCommandHandler implements CommandHandler {
   private class CmcLatestQuoteQuery {
     private String symbol;
     private String convert;
+    private BigDecimal amount = BigDecimal.ONE;
     
     public String toQueryString() {
       return "symbol=" + urlEnc(getSymbol()) + "&convert=" + urlEnc(getConvert());
