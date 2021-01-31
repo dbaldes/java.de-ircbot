@@ -40,7 +40,7 @@ public class HtmlTitleUrlProcessor {
         event.respond(message);
       }
     } catch (HttpStatusException e) {
-      event.respond("" + e.getStatusCode());
+      event.respond(String.format("%d: %s", e.getStatusCode(), e.getMessage()));
     } catch (UnsupportedMimeTypeException e) {
       // ignore
     } catch (IOException e) {

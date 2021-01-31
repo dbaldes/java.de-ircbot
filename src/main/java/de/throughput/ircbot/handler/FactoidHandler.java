@@ -2,6 +2,7 @@ package de.throughput.ircbot.handler;
 
 import static java.util.stream.Collectors.toMap;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
   public boolean onMessage(MessageEvent event) {
     Matcher matcher = PATTERN_FACTOID_DEFINITION.matcher(event.getMessage());
     if (matcher.matches()) {
-      String key = matcher.group(1).toLowerCase();
+      String key = matcher.group(1).toLowerCase(Locale.ROOT);
       String verb = matcher.group(2);
       String fact = matcher.group(3);
       
@@ -82,7 +83,7 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
   }
   
   private String keyTrim(String message) {
-    return message.strip().replaceAll("\\s*[\\,\\.\\?\\!]+$", "").toLowerCase();
+    return message.strip().replaceAll("\\s*[\\,\\.\\?\\!]+$", "").toLowerCase(Locale.ROOT);
   }
   
   private boolean keyExists(String key, String verb) {
