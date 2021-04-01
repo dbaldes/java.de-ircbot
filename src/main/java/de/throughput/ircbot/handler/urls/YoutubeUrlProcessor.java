@@ -21,7 +21,7 @@ import com.google.api.services.youtube.model.VideoListResponse;
 @Component
 public class YoutubeUrlProcessor implements UrlProcessor {
   
-  private static final Pattern YOUTUBE_URL = Pattern.compile("https?://(?:youtu.be/|(?:www.youtube.com/)(?:v/|u/\\w/|embed/|watch\\?v=))([^#\\&\\?]*).*");
+  private static final Pattern YOUTUBE_URL = Pattern.compile("https?://(?:youtu.be/|(?:www.youtube.com|youtube.com)/(?:v/|u/\\w/|embed/|watch\\?v=))([^#\\&\\?]*).*");
 
   private final YouTube youtube;
   

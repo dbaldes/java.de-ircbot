@@ -1,12 +1,13 @@
 package de.throughput.ircbot.handler.urls;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 public class YoutubeUrlProcessorTest {
@@ -17,7 +18,8 @@ public class YoutubeUrlProcessorTest {
       "http://www.youtube.com/watch?v=0zM3nApSvMg#t=0m10s",
       "http://www.youtube.com/embed/0zM3nApSvMg?rel=0",
       "http://www.youtube.com/watch?v=0zM3nApSvMg",
-      "http://youtu.be/0zM3nApSvMg");
+      "http://youtu.be/0zM3nApSvMg",
+      "https://youtube.com/watch?v=gTNWm-cKNqI");
   
   private static final Set<String> NOT_YOUTUBE_URLS = Set.of(
       "http://www.gootube.com/watch?v=0zM3nApSvMg&feature=feedrec_grec_index",
@@ -32,8 +34,8 @@ public class YoutubeUrlProcessorTest {
     Pattern pattern = processor.getUrlPatterns().iterator().next();
     for (String url : YOUTUBE_URLS) {
       Matcher matcher = pattern.matcher(url);
-      assertEquals(matcher.matches(), true);
-      assertEquals(matcher.group(1), "0zM3nApSvMg");
+      assertThat(matcher.matches(), is(true));
+      assertThat(matcher.group(1), anyOf(is("0zM3nApSvMg"), is("gTNWm-cKNqI")));
     }
   }
   
@@ -44,7 +46,7 @@ public class YoutubeUrlProcessorTest {
     Pattern pattern = processor.getUrlPatterns().iterator().next();
     for (String url : NOT_YOUTUBE_URLS) {
       Matcher matcher = pattern.matcher(url);
-      assertEquals(matcher.matches(), false);
+      assertThat(matcher.matches(), is(false));
     }
   }
 
