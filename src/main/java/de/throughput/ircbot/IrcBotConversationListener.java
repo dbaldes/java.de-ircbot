@@ -74,27 +74,40 @@ public class IrcBotConversationListener extends ListenerAdapter {
       List<Pair<Command, CommandHandler>> matches = commandHandlersByCommand.entrySet().stream()
           .filter(entry -> entry.getKey().startsWith(command))
           .map(Entry::getValue)
-          .sorted((a, b) -> a.getLeft().getCommand().compareTo(b.getLeft().getCommand())).collect(Collectors.toList());
+          .sorted((a, b) -> a.getLeft().getCommand().compareTo(b.getLeft().getCommand()))
+          .collect(Collectors.toList());
       
       if (matches.size() == 1) {
-        Pair<Command, CommandHandler> handler = matches.get(0);
-        CommandEvent cmdEvent = new CommandEvent(event, handler.getLeft(), Optional.ofNullable(argLine));
-        handler.getRight().onCommand(cmdEvent);
+        handleCommand(event, argLine, matches.get(0));
       } else if (matches.size() > 1) {
-        event.respond("possible matches: " + matches.stream().map(match -> COMMAND_PREFIX + match.getLeft().getCommand()).collect(Collectors.joining(", ")));
+    	// is there an exact match?
+    	matches.stream()
+    	  .filter(entry -> entry.getKey().getCommand().equals(command))
+    	  .findFirst()
+    	  .ifPresentOrElse(
+    	    match -> handleCommand(event, argLine, match),
+    		() -> event.respond("possible matches: " + possibleMatches(matches)));
       }
-
     } else if (rateLimitExceeded) {
       return;
     }
     
     for (MessageHandler handler : messageHandlers) {
       if (!handler.isOnlyTalkChannels() || isTalkChannel(channel)) {
-          if (handler.onMessage(event)) {
-            return;
-          }
+        if (handler.onMessage(event)) {
+          return;
+        }
       }
     }
+  }
+
+  private String possibleMatches(List<Pair<Command, CommandHandler>> matches) {
+    return matches.stream().map(match -> COMMAND_PREFIX + match.getLeft().getCommand()).collect(Collectors.joining(", "));
+  }
+
+  private void handleCommand(MessageEvent event, String argLine, Pair<Command, CommandHandler> match) {
+    CommandEvent cmdEvent = new CommandEvent(event, match.getLeft(), Optional.ofNullable(argLine));
+    match.getRight().onCommand(cmdEvent);
   }
 
   private boolean isTalkChannel(String channel) {
