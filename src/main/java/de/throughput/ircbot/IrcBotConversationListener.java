@@ -62,7 +62,7 @@ public class IrcBotConversationListener extends ListenerAdapter {
     
     String channel = event.getChannel().getName();
     String message = event.getMessage().trim();
-    if (message.startsWith(COMMAND_PREFIX) && isTalkChannel(channel)) {
+    if (message.startsWith(COMMAND_PREFIX) && message.length() > 1 && isTalkChannel(channel)) {
       if (rateLimitExceeded) {
         event.respond("take a break!");
         return;
