@@ -16,6 +16,7 @@ public class CommandEvent {
 
   private MessageEvent event;
   private Command command;
+  private String commandPrefix;
   private Optional<String> argLine;
   
   public void respond(String answer) {

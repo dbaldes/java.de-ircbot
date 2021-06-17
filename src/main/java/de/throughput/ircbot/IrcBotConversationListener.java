@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,7 +25,7 @@ import de.throughput.ircbot.api.MessageHandler;
 @Component
 public class IrcBotConversationListener extends ListenerAdapter {
   
-  private static final String COMMAND_PREFIX = "!";
+  private static final Set<String> COMMAND_PREFIXES = Set.of("!", "*");
 
   private final IrcBotConfig botConfig;
   private final Map<String, Pair<Command, CommandHandler>> commandHandlersByCommand;
@@ -62,7 +63,9 @@ public class IrcBotConversationListener extends ListenerAdapter {
     
     String channel = event.getChannel().getName();
     String message = event.getMessage().trim();
-    if (message.startsWith(COMMAND_PREFIX) && message.length() > 1 && isTalkChannel(channel)) {
+    Optional<String> commandPrefix = commandPrefix(message);
+    if (commandPrefix.isPresent() && message.length() > 1 && isTalkChannel(channel)) {
+      
       if (rateLimitExceeded) {
         event.respond("take a break!");
         return;
@@ -78,15 +81,15 @@ public class IrcBotConversationListener extends ListenerAdapter {
           .collect(Collectors.toList());
       
       if (matches.size() == 1) {
-        handleCommand(event, argLine, matches.get(0));
+        handleCommand(commandPrefix.get(), event, argLine, matches.get(0));
       } else if (matches.size() > 1) {
     	// is there an exact match?
     	matches.stream()
     	  .filter(entry -> entry.getKey().getCommand().equals(command))
     	  .findFirst()
     	  .ifPresentOrElse(
-    	    match -> handleCommand(event, argLine, match),
-    		() -> event.respond("possible matches: " + possibleMatches(matches)));
+    	    match -> handleCommand(commandPrefix.get(), event, argLine, match),
+    		() -> event.respond("possible matches: " + possibleMatches(commandPrefix.get(), matches)));
       }
     } else if (rateLimitExceeded) {
       return;
@@ -101,12 +104,16 @@ public class IrcBotConversationListener extends ListenerAdapter {
     }
   }
 
-  private String possibleMatches(List<Pair<Command, CommandHandler>> matches) {
-    return matches.stream().map(match -> COMMAND_PREFIX + match.getLeft().getCommand()).collect(Collectors.joining(", "));
+  private Optional<String> commandPrefix(String message) {
+    return COMMAND_PREFIXES.stream().filter(message::startsWith).findFirst();
   }
 
-  private void handleCommand(MessageEvent event, String argLine, Pair<Command, CommandHandler> match) {
-    CommandEvent cmdEvent = new CommandEvent(event, match.getLeft(), Optional.ofNullable(argLine));
+  private String possibleMatches(String commandPrefix, List<Pair<Command, CommandHandler>> matches) {
+    return matches.stream().map(match -> commandPrefix + match.getLeft().getCommand()).collect(Collectors.joining(", "));
+  }
+
+  private void handleCommand(String commandPrefix, MessageEvent event, String argLine, Pair<Command, CommandHandler> match) {
+    CommandEvent cmdEvent = new CommandEvent(event, match.getLeft(), commandPrefix, Optional.ofNullable(argLine));
     match.getRight().onCommand(cmdEvent);
   }
 
