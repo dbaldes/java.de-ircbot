@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.pircbotx.hooks.events.MessageEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -38,14 +39,20 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
   private static final Pattern PATTERN_FACTOID_DEFINITION = Pattern.compile("^\\s*(.*{1,254}\\S)\\s+(is also|is|are also|are)\\s+(.*{1,}\\S)\\s*$"); 
 
   private final JdbcTemplate jdbc;
+  private final Set<String> factoidChannels;
   
   @Autowired
-  public FactoidHandler(JdbcTemplate jdbc) {
+  public FactoidHandler(JdbcTemplate jdbc, @Value("${ircbot.factoid.channels}") String factoidChannels) {
     this.jdbc = jdbc;
+    this.factoidChannels = Set.of(factoidChannels.split(","));
   }
   
   @Override
   public boolean onMessage(MessageEvent event) {
+    if (!factoidChannels.contains(event.getChannel().getName())) {
+      return false;
+    }
+    
     Matcher matcher = PATTERN_FACTOID_DEFINITION.matcher(event.getMessage());
     if (matcher.matches()) {
       String key = matcher.group(1).toLowerCase(Locale.ROOT);
