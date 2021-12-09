@@ -1,7 +1,6 @@
 package de.throughput.ircbot.handler;
 
-import static java.util.Map.entry;
-
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,75 +13,32 @@ import de.throughput.ircbot.api.CommandHandler;
 /**
  * Flip command handler.
  * 
- * !flip <text> - flip <text> over in rage.
+ * !flip <text> - flips <text> over in rage.
  */
 @Component
 public class FlipCommandHandler implements CommandHandler {
 
-  private static Map<Character, Character> REPLACEMENTS = Map.ofEntries(
-      entry('a', '\u0250'),
-      entry('b', 'q'),
-      entry('c', '\u0254'),
-      entry('d', 'p'),
-      entry('e', '\u01dd'),
-      entry('f', '\u025f'),
-      entry('g', '\u0183'),
-      entry('h', '\u0265'),
-      entry('i', '\u1d09'),
-      entry('j', '\u027e'),
-      entry('k', '\u029e'),
-      entry('l', '\u05df'),
-      entry('m', '\u026f'),
-      entry('n', 'u'),
-      entry('o', 'o'),
-      entry('p', 'd'),
-      entry('q', 'b'),
-      entry('r', '\u0279'),
-      entry('s', 's'),
-      entry('t', '\u0287'),
-      entry('u', 'n'),
-      entry('v', '\u028c'),
-      entry('w', '\u028d'),
-      entry('x', 'x'),
-      entry('y', '\u028e'),
-      entry('z', 'z'),
-      entry('?', '\u00bf'),
-      entry('.', '\u02d9'),
-      entry(',', '\''),
-      entry('(', ')'),
-      entry('<', '>'),
-      entry('[', ']'),
-      entry('{', '}'),
-      entry('\'', ','),
-      entry('_', '\u203e'),
-      entry('\u0250', 'a'),
-      entry('\u0254', 'c'),
-      entry('\u01dd', 'e'),
-      entry('\u025f', 'f'),
-      entry('\u0183', 'g'),
-      entry('\u0265', 'h'),
-      entry('\u1d09', 'i'),
-      entry('\u027e', 'j'),
-      entry('\u029e', 'k'),
-      entry('\u05df', 'l'),
-      entry('\u026f', 'm'),
-      entry('\u0279', 'r'),
-      entry('\u0287', 't'),
-      entry('\u028c', 'v'),
-      entry('\u028d', 'w'),
-      entry('\u028e', 'y'),
-      entry('\u00bf', '?'),
-      entry('\u02d9', '.'),
-      entry(')', '('),
-      entry('>', '<'),
-      entry(']', '['),
-      entry('}', '{'),
-      entry('\u203e', '_'));
+  private static String ALPHABET = "abcdefghijklmnorstvwxyz"
+      + "?!.,(<[{'_\\";
+  private static String ALPHABET_FLIPPED = "\u0250q\u0254p\u01dd\u025f\u0183\u0265\u1d09\u027e\u029e\u05df\u026fuo\u0279s\u0287\u028c\u028dx\u028ez"
+      + "\u00bf\u00a1\u02d9')>]},\u203e/";
   
-  private static final String FLIPPER = "(\u256f\u00b0\u25a1\u00b0\uff09\u256f \ufe35 ";
+  private final static Map<Character, Character> REPLACEMENTS;
+  
+  static {
+    REPLACEMENTS = new HashMap<>();
+    for (int i = 0; i < ALPHABET.length(); ++ i) {
+      char c = ALPHABET.charAt(i);
+      char cr = ALPHABET_FLIPPED.charAt(i);
+      
+      REPLACEMENTS.put(c, cr);
+      REPLACEMENTS.put(cr, c);
+    }
+  }
+  
+  private static final String ASCII_FLIPPER = "(\u256f\u00b0\u25a1\u00b0\uff09\u256f \ufe35 ";
 
-
-  private static final Command CMD_FLIP = new Command("flip", "flip <text> - flip <text> over in rage.");
+  private static final Command CMD_FLIP = new Command("flip", "flip <text> - flips <text> over in rage.");
 
   @Override
   public Set<Command> getCommands() {
@@ -92,7 +48,7 @@ public class FlipCommandHandler implements CommandHandler {
   @Override
   public boolean onCommand(CommandEvent command) {
     command.getArgLine().ifPresentOrElse(
-        text -> command.respond(FLIPPER + flip(text)),
+        text -> command.getEvent().getChannel().send().message(ASCII_FLIPPER + flip(text)),
         () -> command.respond(CMD_FLIP.getUsage()));
     return false;
   }
