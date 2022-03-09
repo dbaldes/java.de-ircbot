@@ -35,6 +35,7 @@ import twitter4j.conf.ConfigurationBuilder;
 public class IrcBotMain {
 
   private static final int IRC_DEFAULT_PORT = 6667;
+  private static final String REALNAME = "Computer-Bot";
   private static final String VERSION = "break it fix it";
   private static final int DELAY_RECONNECT_MS = 5000;
 
@@ -82,7 +83,7 @@ public class IrcBotMain {
         .setAutoReconnect(true)
         .setAutoReconnectDelay(DELAY_RECONNECT_MS)
         .setVersion(VERSION)
-        .setRealName(VERSION)
+        .setRealName(REALNAME)
         .addListener(cmdListener)
         .addListener(convListener)
         .addServer(server, port)
