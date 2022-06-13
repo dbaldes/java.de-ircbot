@@ -130,7 +130,7 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
   }
   
   private Optional<String> forget(String key) {
-    if (deleteFact(key)) {
+    if (deleteFact(key.toLowerCase(Locale.ROOT))) {
       return Optional.of(String.format("I forgot %s", key));
     }
     return Optional.empty();
