@@ -1,13 +1,13 @@
 package de.throughput.ircbot.handler.urls;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 public class YoutubeUrlProcessorTest {
@@ -29,7 +29,7 @@ public class YoutubeUrlProcessorTest {
 
   @Test
   public void testUrlPatternsMatch() {
-    YoutubeUrlProcessor processor = new YoutubeUrlProcessor(null);
+    YoutubeUrlProcessor processor = new YoutubeUrlProcessor(null, null);
     
     Pattern pattern = processor.getUrlPatterns().iterator().next();
     for (String url : YOUTUBE_URLS) {
@@ -41,7 +41,7 @@ public class YoutubeUrlProcessorTest {
   
   @Test
   public void testUrlPatternsNoMatch() {
-    YoutubeUrlProcessor processor = new YoutubeUrlProcessor(null);
+    YoutubeUrlProcessor processor = new YoutubeUrlProcessor(null, null);
     
     Pattern pattern = processor.getUrlPatterns().iterator().next();
     for (String url : NOT_YOUTUBE_URLS) {
