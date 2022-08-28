@@ -83,13 +83,13 @@ public class IrcBotConversationListener extends ListenerAdapter {
       if (matches.size() == 1) {
         handleCommand(commandPrefix.get(), event, argLine, matches.get(0));
       } else if (matches.size() > 1) {
-    	// is there an exact match?
-    	matches.stream()
-    	  .filter(entry -> entry.getKey().getCommand().equals(command))
-    	  .findFirst()
-    	  .ifPresentOrElse(
-    	    match -> handleCommand(commandPrefix.get(), event, argLine, match),
-    		() -> event.respond("possible matches: " + possibleMatches(commandPrefix.get(), matches)));
+        // is there an exact match?
+        matches.stream()
+          .filter(entry -> entry.getKey().getCommand().equals(command))
+          .findFirst()
+          .ifPresentOrElse(
+            match -> handleCommand(commandPrefix.get(), event, argLine, match),
+            () -> event.respond("possible matches: " + possibleMatches(commandPrefix.get(), matches)));
       }
     } else if (rateLimitExceeded) {
       return;
