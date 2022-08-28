@@ -50,7 +50,7 @@ public class CryptoCommandHandler implements CommandHandler {
   private static final String API_URL_LISTINGS_LATEST = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
   private final String cmcApiKey;
 
-  private static final Command CMD_CRYPTO = new Command("crypto", "crypto [<amount>] <symbols> [in <currency>] - "
+  public static final Command CMD_CRYPTO = new Command("crypto", "crypto [<amount>] <symbols> [in <currency>] - "
       + "get price information on crypto currencies - currency defaults to USD, amount to 1");
   
   public CryptoCommandHandler(@Value("${coinmarketcap.api.key}") String cmcApiKey) {
