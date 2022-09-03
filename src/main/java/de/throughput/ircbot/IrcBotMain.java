@@ -5,6 +5,7 @@ import java.security.GeneralSecurityException;
 
 import javax.net.ssl.SSLSocketFactory;
 
+import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.UtilSSLSocketFactory;
@@ -15,7 +16,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -34,7 +34,6 @@ import twitter4j.conf.ConfigurationBuilder;
 @EnableScheduling
 public class IrcBotMain {
 
-  private static final int IRC_DEFAULT_PORT = 6667;
   private static final String REALNAME = "Computer-Bot";
   private static final String VERSION = "break it fix it";
   private static final int DELAY_RECONNECT_MS = 5000;
@@ -69,14 +68,11 @@ public class IrcBotMain {
    * @return bot config
    */
   @Bean
-  Configuration botConfig(ApplicationArguments args,
+  Configuration botConfig(IrcBotConfig botConfig,
       IrcBotControlListener cmdListener,
       IrcBotConversationListener convListener) {
-    validate(args);
+    validate(botConfig);
     
-    String nick = args.getOptionValues("nick").get(0);
-    String server = args.getOptionValues("server").get(0);
-    int port = args.containsOption("port") ? Integer.parseInt(args.getOptionValues("port").get(0)) : IRC_DEFAULT_PORT;
     
     Configuration.Builder config = new Configuration.Builder()
         .setAutoNickChange(true)
@@ -86,51 +82,46 @@ public class IrcBotMain {
         .setRealName(REALNAME)
         .addListener(cmdListener)
         .addListener(convListener)
-        .addServer(server, port)
-        .setName(nick)
-        .setLogin(nick)
-        .addAutoJoinChannels(args.getOptionValues("channel"));
-
-    if (args.containsOption("identify")) {
-      String[] id = args.getOptionValues("identify").get(0).split(":", 2);
-      if (id.length != 2) {
-        throw new IllegalArgumentException("identify must be <account:password>");
+        .addServer(botConfig.getServer(), botConfig.getPort())
+        .setName(botConfig.getNick())
+        .setLogin(botConfig.getNick())
+        .setNickservPassword(botConfig.getNickservPassword())
+        .addAutoJoinChannels(botConfig.getChannels());
+    
+    if (botConfig.isSsl() || botConfig.isTls()) {
+      SSLSocketFactory socketFactory = null;
+      if (botConfig.isTrustAll()) {
+        socketFactory = new UtilSSLSocketFactory().trustAllCertificates();
+      } else {
+        socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
       }
-      config.setNickservPassword(id[1]);
-    } else if (args.containsOption("nickservPassword")) {
-      config.setNickservPassword(args.getOptionValues("nickservPassword").get(0));
+
+      if (botConfig.isSsl()) {
+        config.setSocketFactory(socketFactory);
+      } else {
+        config.addCapHandler(new TLSCapHandler(socketFactory, false));
+      }
     }
-    
-    SSLSocketFactory socketFactory = null;
-    if (args.containsOption("trustAll")) {
-      socketFactory = new UtilSSLSocketFactory().trustAllCertificates();
-    } else {
-      socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-    }
-    
-    if (args.containsOption("ssl")) {
-      config.setSocketFactory(socketFactory);
-    } else if (args.containsOption("tls")) {
-      config.addCapHandler(new TLSCapHandler(socketFactory, true));
-    }
-    Configuration configuration = config.buildConfiguration();
-    return configuration;
+    return config.buildConfiguration();
   }
 
   /**
-   * Checks mandatory arguments.
+   * Checks mandatory configuration values.
    * 
-   * @param args arguments
+   * @param botConfig config
    */
-  private void validate(ApplicationArguments args) {
-    if (!args.containsOption("server") || args.getOptionValues("server").size() != 1) {
-      throw new IllegalArgumentException("must give exactly one server");
+  private void validate(IrcBotConfig botConfig) {
+    if (StringUtils.isEmpty(botConfig.getServer())) {
+      throw new IllegalArgumentException("must give a server");
     }
-    if (!args.containsOption("nick") || args.getOptionValues("nick").size() != 1) {
-      throw new IllegalArgumentException("must give exactly one nick");
+    if (StringUtils.isEmpty(botConfig.getNick())) {
+      throw new IllegalArgumentException("must give a nick");
     }
-    if (!args.containsOption("channel") || args.getOptionValues("channel").size() < 1) {
+    if (botConfig.getChannels() == null || botConfig.getChannels().isEmpty()) {
       throw new IllegalArgumentException("must give one or more channels");
+    }
+    if (botConfig.isSsl() && botConfig.isTls()) {
+      throw new IllegalArgumentException("choose one of SSL or TLS");
     }
   }
 

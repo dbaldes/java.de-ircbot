@@ -11,11 +11,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.pircbotx.hooks.events.MessageEvent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import de.throughput.ircbot.IrcBotConfig;
 import de.throughput.ircbot.api.Command;
 import de.throughput.ircbot.api.CommandEvent;
 import de.throughput.ircbot.api.CommandHandler;
@@ -41,10 +40,9 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
   private final JdbcTemplate jdbc;
   private final Set<String> factoidChannels;
   
-  @Autowired
-  public FactoidHandler(JdbcTemplate jdbc, @Value("${ircbot.factoid.channels}") String factoidChannels) {
+  public FactoidHandler(JdbcTemplate jdbc, IrcBotConfig botConfig) {
     this.jdbc = jdbc;
-    this.factoidChannels = Set.of(factoidChannels.split(","));
+    this.factoidChannels = botConfig.getFactoidChannels();
   }
   
   @Override

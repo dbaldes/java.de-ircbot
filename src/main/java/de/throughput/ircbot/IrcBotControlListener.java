@@ -3,7 +3,6 @@ package de.throughput.ircbot;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,8 +10,6 @@ import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.NoticeEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,9 +27,8 @@ public class IrcBotControlListener extends ListenerAdapter {
   private Map<String, BigInteger> admins = new HashMap<>();
   private Map<String, LocalDateTime> authedAdmins = new ConcurrentHashMap<String, LocalDateTime>();
   
-  @Autowired
-  public IrcBotControlListener(@Value("#{'${ircbot.admins}'.split(',')}") List<String> adminList) {
-    for (String admin : adminList) {
+  public IrcBotControlListener(IrcBotConfig botConfig) {
+    for (String admin : botConfig.getAdmins()) {
       String[] parts = admin.split(":");
       if (parts.length == 2) {
         String admnick = parts[0];
