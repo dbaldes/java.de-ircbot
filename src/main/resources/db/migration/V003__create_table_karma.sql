@@ -1,6 +1,7 @@
-CREATE TABLE karma (
-  "key"         VARCHAR(255) NOT NULL,
-  "karma"       INTEGER NOT NULL,
+CREATE TABLE karma
+(
+    "key"   VARCHAR(255) NOT NULL,
+    "karma" INTEGER      NOT NULL,
   
   PRIMARY KEY ("key")
 );

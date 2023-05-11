@@ -12,16 +12,16 @@ import de.throughput.urlcollector.api.UrlMessage;
 @Component
 public class UrlSinkService {
 
-  private RabbitTemplate rabbit;
-  
-  @Autowired
-  public UrlSinkService(RabbitTemplate rabbit) {
-    this.rabbit = rabbit;
-  }
-  
-  public void processUrl(String server, String channel, String sender, String login, String hostname, String url) {
-    UrlMessage message = new UrlMessage(url, "irc", String.format("%s:%s:%s:%s:%s", server, channel, sender, login, hostname));
-    this.rabbit.convertAndSend(UrlMessage.TOPIC_EXCHANGE_NAME, UrlMessage.ROUTING_KEY, message);
-  }
+    private RabbitTemplate rabbit;
+
+    @Autowired
+    public UrlSinkService(RabbitTemplate rabbit) {
+        this.rabbit = rabbit;
+    }
+
+    public void processUrl(String server, String channel, String sender, String login, String hostname, String url) {
+        UrlMessage message = new UrlMessage(url, "irc", String.format("%s:%s:%s:%s:%s", server, channel, sender, login, hostname));
+        this.rabbit.convertAndSend(UrlMessage.TOPIC_EXCHANGE_NAME, UrlMessage.ROUTING_KEY, message);
+    }
 
 }

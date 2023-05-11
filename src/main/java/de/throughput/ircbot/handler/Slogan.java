@@ -10,9 +10,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public class Slogan {
 
-  private final String channel;
-  private final String nick;
-  private final long timestamp;
-  private final String slogan;
+    private final String channel;
+    private final String nick;
+    private final long timestamp;
+    private final String slogan;
 
 }

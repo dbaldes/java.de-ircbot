@@ -10,16 +10,16 @@ import lombok.Getter;
 @AllArgsConstructor
 public class QuoteMessage {
 
-  private final String channel;
-  private final String nick;
-  private final long timestamp;
-  private final String message;
+    private final String channel;
+    private final String nick;
+    private final long timestamp;
+    private final String message;
 
-  public String getKey() {
-    return channel + ":" + nick;
-  }
-  
-  public String getAsMessage() {
-    return String.format("<%s> %s", nick, message);
-  }
+    public String getKey() {
+        return channel + ":" + nick;
+    }
+
+    public String getAsMessage() {
+        return String.format("<%s> %s", nick, message);
+    }
 }

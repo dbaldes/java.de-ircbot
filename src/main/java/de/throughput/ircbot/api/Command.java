@@ -12,7 +12,7 @@ import lombok.Getter;
 @EqualsAndHashCode(of = "command")
 public class Command {
 
-  private String command;
-  private String usage;
-  
+    private String command;
+    private String usage;
+
 }
