@@ -1,9 +1,9 @@
 {
-  "country": "#java.de",
-  "cases": 1,
-  "recovered": 1,
-  "deaths": 0,             
-  "updated": 0,      
-  "active": 0,
-  "affectedCountries": 192
+    "country": "#java.de",
+    "cases": 1,
+    "recovered": 1,
+    "deaths": 0,
+    "updated": 0,
+    "active": 0,
+    "affectedCountries": 192
 }
