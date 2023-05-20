@@ -4,18 +4,18 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.throughput</groupId>
     <artifactId>ircbot</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.6.1</version>
+        <version>3.1.0</version>
     </parent>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
         <spring.boot.mainclass>de.throughput.ircbot.IrcBotMain</spring.boot.mainclass>
     </properties>
@@ -88,15 +88,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.twitter4j</groupId>
-            <artifactId>twitter4j-core</artifactId>
-            <version>4.0.7</version>
+            <groupId>com.twitter</groupId>
+            <artifactId>twitter-api-java-sdk</artifactId>
+            <version>2.0.3</version>
         </dependency>
 
         <dependency>
             <groupId>com.yahoofinance-api</groupId>
             <artifactId>YahooFinanceAPI</artifactId>
-            <version>3.15.0</version>
+            <version>3.18.0-db</version>
         </dependency>
 
         <dependency>

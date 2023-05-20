@@ -2,6 +2,7 @@ package de.throughput.ircbot;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
@@ -19,20 +20,20 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeRequestInitializer;
-
-import twitter4j.Twitter;
-import twitter4j.TwitterFactory;
-import twitter4j.conf.ConfigurationBuilder;
+import com.twitter.clientlib.TwitterCredentialsBearer;
+import com.twitter.clientlib.api.TwitterApi;
+import com.twitter.clientlib.auth.TwitterOAuth20AppOnlyService;
 
 @SpringBootApplication
 @EnableRabbit
 @EnableScheduling
 public class IrcBotMain {
 
-    private static final String REALNAME = "Computer-Bot";
-    private static final String VERSION = "break it fix it";
+    private static final String REALNAME = "Dr. Ashoka Fockit";
+    private static final String VERSION = "0.9.0";
     private static final int DELAY_RECONNECT_MS = 5000;
 
     public static void main(String[] args) {
@@ -58,14 +59,10 @@ public class IrcBotMain {
      * Create the pircbotx configuration.
      */
     @Bean
-    Configuration botConfig(IrcBotConfig botConfig,
-            IrcBotControlListener cmdListener,
-            IrcBotConversationListener convListener) {
+    Configuration botConfig(IrcBotConfig botConfig, IrcBotControlListener cmdListener, IrcBotConversationListener convListener) {
         validate(botConfig);
 
-
-        Configuration.Builder config = new Configuration.Builder()
-                .setAutoNickChange(true)
+        Configuration.Builder config = new Configuration.Builder().setAutoNickChange(true)
                 .setAutoReconnect(true)
                 .setAutoReconnectDelay(DELAY_RECONNECT_MS)
                 .setVersion(VERSION)
@@ -107,8 +104,7 @@ public class IrcBotMain {
         if (StringUtils.isEmpty(botConfig.getNick())) {
             throw new IllegalArgumentException("must give a nick");
         }
-        if (botConfig.getChannels() == null || botConfig.getChannels()
-                .isEmpty()) {
+        if (botConfig.getChannels() == null || botConfig.getChannels().isEmpty()) {
             throw new IllegalArgumentException("must give one or more channels");
         }
         if (botConfig.isSsl() && botConfig.isTls()) {
@@ -130,26 +126,17 @@ public class IrcBotMain {
 
     @Bean
     public YouTube youtube(@Value("${youtube.api.key}") String apiKey) throws GeneralSecurityException, IOException {
-        YouTube youTube = new YouTube.Builder(com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport(),
-                com.google.api.client.json.jackson2.JacksonFactory.getDefaultInstance(), null)
-                .setApplicationName("ircbot")
+        return new YouTube.Builder(com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport(),
+                com.google.api.client.json.jackson2.JacksonFactory.getDefaultInstance(), null).setApplicationName("ircbot")
                 .setYouTubeRequestInitializer(new YouTubeRequestInitializer(apiKey))
                 .build();
-
-        return youTube;
     }
 
     @Bean
-    public Twitter twitter(@Value("${twitter.apiKey}") String apiKey, @Value("${twitter.apiSecretKey}") String apiSecretKey,
-            @Value("${twitter.accessToken}") String accessToken, @Value("${twitter.accessTokenSecret}") String accessTokenSecret) {
-        ConfigurationBuilder cb = new ConfigurationBuilder();
-        cb.setOAuthConsumerKey(apiKey)
-                .setOAuthConsumerSecret(apiSecretKey)
-                .setOAuthAccessToken(accessToken)
-                .setOAuthAccessTokenSecret(accessTokenSecret);
+    public TwitterApi twitter(@Value("${twitter.bearerToken}") String bearerToken) {
 
-        TwitterFactory tf = new TwitterFactory(cb.build());
-        return tf.getInstance();
+        TwitterCredentialsBearer credentials = new TwitterCredentialsBearer(bearerToken);
+        return new TwitterApi(credentials);
     }
 
 }
