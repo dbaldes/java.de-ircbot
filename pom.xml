@@ -96,7 +96,7 @@
         <dependency>
             <groupId>com.yahoofinance-api</groupId>
             <artifactId>YahooFinanceAPI</artifactId>
-            <version>3.18.0-db</version>
+            <version>3.18.1-db-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -117,6 +117,14 @@
         <tag>HEAD</tag>
     </scm>
 
+    <distributionManagement>
+        <repository>
+            <id>internal.repo</id>
+            <name>Temporary Staging Repository</name>
+            <url>file://${project.build.directory}/dummy-mvn-repo</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -136,7 +144,7 @@
                             <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>
                                 <argument>rmi</argument>
-                                <argument>${project.groupId}/${project.artifactId}:${project.version}</argument>
+                                <argument>${docker.url}/${project.artifactId}:${project.version}</argument>
                             </arguments>
                             <successCodes><!-- the image might not exist -->
                                 <successCode>0</successCode>
@@ -161,7 +169,7 @@
                                 <argument>--build-arg</argument>
                                 <argument>jarfile=target/${project.build.finalName}.jar</argument>
                                 <argument>-t</argument>
-                                <argument>${project.groupId}/${project.artifactId}:${project.version}</argument>
+                                <argument>${docker.url}/${project.artifactId}:${project.version}</argument>
                                 <argument>.</argument>
                             </arguments>
                         </configuration>
@@ -198,7 +206,7 @@
                             <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>
                                 <argument>push</argument>
-                                <argument>${project.groupId}/${project.artifactId}:${project.version}</argument>
+                                <argument>${docker.url}/${project.artifactId}:${project.version}</argument>
                             </arguments>
                         </configuration>
                     </execution>

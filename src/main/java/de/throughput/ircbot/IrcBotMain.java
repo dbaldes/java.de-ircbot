@@ -73,7 +73,8 @@ public class IrcBotMain {
                 .setName(botConfig.getNick())
                 .setLogin(botConfig.getNick())
                 .setNickservPassword(botConfig.getNickservPassword())
-                .addAutoJoinChannels(botConfig.getChannels());
+                .addAutoJoinChannels(botConfig.getChannels())
+                .setNickservDelayJoin(true);
 
         if (botConfig.isSsl() || botConfig.isTls()) {
             SSLSocketFactory socketFactory = null;

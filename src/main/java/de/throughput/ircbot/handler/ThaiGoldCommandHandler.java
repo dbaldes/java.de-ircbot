@@ -21,8 +21,7 @@ import de.throughput.ircbot.api.CommandHandler;
 @Component
 public class ThaiGoldCommandHandler implements CommandHandler {
 
-    private static final String API_URL_LATEST = "https://thai-gold-api.herokuapp.com/latest";
-
+    private static final String API_URL_LATEST = "https://api.chnwt.dev/thai-gold-api/latest";
 
     private static final Command CMD_THAIGOLD = new Command("thaigold", "thaigold - get current thai gold price information");
 
@@ -85,6 +84,5 @@ public class ThaiGoldCommandHandler implements CommandHandler {
         private String buy;
         private String sell;
     }
-
 
 }
