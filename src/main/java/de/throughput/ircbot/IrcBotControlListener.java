@@ -39,7 +39,7 @@ public class IrcBotControlListener extends ListenerAdapter {
             } else if (botConfig.getAdmins()
                     .contains(user
                             .getNick())) {
-                // not authed; if this is an admit user, store message and ask NickServ for account info
+                // not authed; if this is an admin user, store message and ask NickServ for account info
                 queuedCommand.put(user
                         .getNick(), event);
                 event.getBot()
