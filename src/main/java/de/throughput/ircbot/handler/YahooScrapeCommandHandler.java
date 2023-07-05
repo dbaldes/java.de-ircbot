@@ -45,7 +45,7 @@ public class YahooScrapeCommandHandler implements CommandHandler {
         Elements prices = doc.getElementsByAttributeValue("data-test", "qsp-price");
         Elements priceChanges = doc.getElementsByAttributeValue("data-test", "qsp-price-change");
         int i = 0;
-        StringBuffer allPrices = new StringBuffer();
+        StringBuilder allPrices = new StringBuilder();
         String symbol = doc.title().substring(doc.title().indexOf("("));
         symbol = symbol.substring(1, symbol.indexOf(")"));
         allPrices.append(symbol);
