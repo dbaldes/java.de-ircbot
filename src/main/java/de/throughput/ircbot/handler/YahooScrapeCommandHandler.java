@@ -23,14 +23,15 @@ import org.springframework.stereotype.Component;
 public class YahooScrapeCommandHandler implements CommandHandler {
 
     private static final String baseUri = "https://finance.yahoo.com";
-    private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
+    private static final String MOZILLA_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36";
 
-    private static final Command CMD_NEWYAHOO = new Command("stock2", "Stock2 get Finance information");
+    private static final Command CMD_NEWYAHOO = new Command("stock", "<symbols> - get price information on stock symbols");
     public void checkStock(String stockId, CommandEvent command) throws IOException {
         HttpRequest request = HttpRequest.newBuilder(
-                URI.create(baseUri.concat("/quote/"+stockId+"?p="+stockId)))
-            .GET()
-            .build();
+                        URI.create(baseUri.concat("/quote/" + stockId + "?p=" + stockId)))
+                .header("User-Agent", MOZILLA_USER_AGENT)
+                .GET()
+                .build();
 
         HttpClient.newHttpClient()
             .sendAsync(request, BodyHandlers.ofString())

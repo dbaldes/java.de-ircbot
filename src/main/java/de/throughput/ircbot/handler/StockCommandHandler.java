@@ -21,7 +21,7 @@ import yahoofinance.quotes.stock.StockQuote;
 /**
  * Command handler for retrieving stock and FX quotes from yahoo finance.
  */
-@Component
+//@Component disabled because broken
 public class StockCommandHandler implements CommandHandler {
 
     private static final BigDecimal ONE_HUNDREDTH = new BigDecimal("0.01");
