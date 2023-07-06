@@ -31,8 +31,6 @@ public class TwitterUrlProcessor implements UrlProcessor {
     public void process(Matcher matcher, GenericMessageEvent event) {
         String tweetId = matcher.group(1);
         try {
-            twitter.refreshToken();
-
             Get2TweetsIdResponse response = twitter.tweets()
                     .findTweetById(tweetId)
                     .tweetFields(Set.of("author_id", "id"))
@@ -48,7 +46,7 @@ public class TwitterUrlProcessor implements UrlProcessor {
 
             event.respond(String.format("^ @%s on twitter: %s", userName, tweet.getText()));
         } catch (ApiException e) {
-            event.respond("that didn't work: " + e.getMessage());
+            //event.respond("that didn't work: " + e.getCode());
         }
     }
 }
