@@ -39,8 +39,8 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
     private static final BigDecimal ONE_TENHOUSANDTH = new BigDecimal("0.0001");
     private static final String DEFAULT_CURRENCY = "USD";
 
-    private static final Command CMD_STOCK = new Command("astock", "stock <symbols> - get price information on stock symbols. example: !stock AMD");
-    private static final Command CMD_FX = new Command("afx", "fx <symbols> - get currency exchange rates. example: !fx USDEUR");
+    private static final Command CMD_STOCK = new Command("stock", "stock <symbols> - get price information on stock symbols. example: !stock AMD");
+    private static final Command CMD_FX = new Command("fx", "fx <symbols> - get currency exchange rates. example: !fx USDEUR");
 
     private static final String API_URL_STOCK_QUOTE = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%s&apikey=%s";
     private static final String API_URL_FOREX = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=%s&to_currency=%s&apikey=%s";

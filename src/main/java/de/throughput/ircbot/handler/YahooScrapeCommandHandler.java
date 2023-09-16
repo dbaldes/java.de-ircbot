@@ -27,7 +27,7 @@ public class YahooScrapeCommandHandler implements CommandHandler {
     private static final String FINANCE_YAHOO_URI = "https://finance.yahoo.com";
     private static final String MOZILLA_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36";
 
-    private static final Command CMD_STOCK = new Command("stock", "<symbols> - get price information on stock symbols");
+    private static final Command CMD_STOCK = new Command("ystock", "<symbols> - get price information on stock symbols");
 
     @Override
     public Set<Command> getCommands() {
