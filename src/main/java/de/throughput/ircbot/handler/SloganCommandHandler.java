@@ -86,7 +86,7 @@ public class SloganCommandHandler implements CommandHandler {
                             slogan -> command.getEvent()
                                     .getChannel()
                                     .send()
-                                    .message(slogan.getSlogan()),
+                                    .message(slogan),
                             () -> command.respond("No slogan found. Add a slogan with !addslogan <slogan>."));
         } else if (CMD_ADDSLOGAN.equals(command.getCommand())) {
             command.getArgLine()
@@ -100,7 +100,7 @@ public class SloganCommandHandler implements CommandHandler {
                                             .getName(), command.getEvent()
                                             .getUser()
                                             .getNick(), slogan);
-                                    command.respond("of course, comrade!");
+                                    command.respond("Of course, comrade!");
                                 } else {
                                     command.respond("I know, comrade, I know!");
                                 }
@@ -115,7 +115,7 @@ public class SloganCommandHandler implements CommandHandler {
                                         .getName(), argLine)) {
                                     command.respond("Slogan not found.");
                                 } else {
-                                    command.respond("Slogan deleted.");
+                                    command.respond("Forget those lies!");
                                 }
                             },
                             () -> command.respond(CMD_RMSLOGAN.getUsage()));
@@ -161,14 +161,22 @@ public class SloganCommandHandler implements CommandHandler {
      * @param channel channel
      * @return quote or null if none found
      */
-    private Optional<Slogan> lookupRandomSlogan(String channel) {
+    private Optional<String> lookupRandomSlogan(String channel) {
         try {
-            return Optional.of(jdbc.queryForObject(
-                    "SELECT EXTRACT(EPOCH FROM timestamp) * 1000, nick, slogan "
-                            + "FROM slogan "
-                            + "WHERE channel = ? ORDER BY RANDOM() LIMIT 1",
-                    (rs, rowNum) -> new Slogan(channel, rs.getString(2), rs.getLong(1), rs.getString(3)),
-                    channel));
+            return Optional.ofNullable(jdbc.queryForObject(
+                    """
+                        WITH random_row AS (
+                            SELECT id
+                              FROM slogan
+                             WHERE channel = ?
+                             ORDER BY RANDOM()
+                             LIMIT 1)
+                        UPDATE slogan
+                           SET count = count + 1, usedstamp = NOW()
+                         WHERE id = (SELECT id FROM random_row)
+                        RETURNING slogan
+                        """,
+                    (rs, rowNum) -> rs.getString(1), channel));
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
@@ -184,8 +192,7 @@ public class SloganCommandHandler implements CommandHandler {
             readActiveTalkChannels().forEach(channel -> {
                 if (rnd.nextFloat() <= P_RANDOM_SLOGAN) {
                     lastSloganTimestampEpochMillis = currentTimeEpochMillis;
-                    lookupRandomSlogan(channel).ifPresent(slogan -> bot.send()
-                            .message(channel, slogan.getSlogan()));
+                    lookupRandomSlogan(channel).ifPresent(slogan -> bot.send().message(channel, slogan));
                 }
             });
         }
@@ -201,13 +208,15 @@ public class SloganCommandHandler implements CommandHandler {
      */
     private Set<String> readActiveTalkChannels() {
         return jdbc.queryForList(
-                        "SELECT channel FROM seen "
-                                + "WHERE timestamp > NOW() - INTERVAL '10 minutes' "
-                                + "GROUP BY channel "
-                                + "HAVING COUNT(nick) > 2;", String.class)
+                        """
+                            SELECT channel 
+                              FROM seen 
+                             WHERE timestamp > NOW() - INTERVAL '10 minutes' 
+                             GROUP BY channel 
+                            HAVING COUNT(nick) > 2;
+                            """, String.class)
                 .stream()
-                .filter(channel -> botConfig.getTalkChannels()
-                        .contains(channel))
+                .filter(channel -> botConfig.getTalkChannels().contains(channel))
                 .collect(toSet());
     }
 
