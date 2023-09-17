@@ -10,9 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.springframework.stereotype.Component;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 @Component
 @RequiredArgsConstructor
@@ -22,9 +26,9 @@ public class OpenAiChatMessageHandler implements MessageHandler {
                                                 + "Fallen Sie nicht aus der Rolle. "
                                                 + "Halten Sie Ihre Antworten kurz.";
 
-    public static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
+    private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
     private static final int MAX_CONTEXT_MESSAGES = 10;
-    public static final int MAX_TOKENS = 256;
+    private static final int MAX_TOKENS = 256;
 
     private final LinkedList<ChatMessage> contextMessages = new LinkedList<>();
 
@@ -32,8 +36,10 @@ public class OpenAiChatMessageHandler implements MessageHandler {
 
     @Override
     public boolean onMessage(MessageEvent event) {
-        if (event.getMessage().startsWith(event.getBot().getNick() + ":")) {
-            String message = event.getMessage().substring(event.getBot().getNick().length() + 1).trim();
+        String message = event.getMessage().trim();
+        String botNick = event.getBot().getNick();
+        if (message.startsWith(botNick + ":") || message.startsWith(botNick + ",")) {
+            message = message.substring(event.getBot().getNick().length() + 1).trim();
 
             synchronized (contextMessages) {
                 var request = ChatCompletionRequest.builder()
@@ -58,8 +64,20 @@ public class OpenAiChatMessageHandler implements MessageHandler {
         addContextMessage(chatMessage);
         List<ChatMessage> promptMessages = new ArrayList<>();
         promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), SYSTEM_PROMPT));
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
         promptMessages.addAll(contextMessages);
         return promptMessages;
+    }
+
+    private String getDatePrompt() {
+        TimeZone timeZone = TimeZone.getTimeZone("Europe/Berlin");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd. MMMM yy yy", Locale.GERMAN);
+        dateFormat.setTimeZone(timeZone);
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.GERMAN);
+        timeFormat.setTimeZone(timeZone);
+
+        Date now = new Date();
+        return "Heute ist der " + dateFormat.format(now) + ". Es ist " + timeFormat.format(now) + " Uhr in Deutschland.";
     }
 
     private void addContextMessage(ChatMessage chatMessage) {
