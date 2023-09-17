@@ -64,6 +64,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>service</artifactId>
+            <version>0.16.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>de.throughput</groupId>
             <artifactId>urlcollector-api</artifactId>
             <version>0.0.1</version>

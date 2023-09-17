@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLSocketFactory;
+
+import com.theokanning.openai.service.OpenAiService;
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -135,9 +137,13 @@ public class IrcBotMain {
 
     @Bean
     public TwitterApi twitter(@Value("${twitter.bearerToken}") String bearerToken) {
-
         TwitterCredentialsBearer credentials = new TwitterCredentialsBearer(bearerToken);
         return new TwitterApi(credentials);
+    }
+
+    @Bean
+    public OpenAiService openAiService(@Value("${openai.apiKey}") String apiKey) {
+        return new OpenAiService(apiKey);
     }
 
 }
