@@ -71,13 +71,13 @@ public class OpenAiChatMessageHandler implements MessageHandler {
 
     private String getDatePrompt() {
         TimeZone timeZone = TimeZone.getTimeZone("Europe/Berlin");
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd. MMMM yy yy", Locale.GERMAN);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, 'der' dd. MMMM yyyy", Locale.GERMAN);
         dateFormat.setTimeZone(timeZone);
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.GERMAN);
         timeFormat.setTimeZone(timeZone);
 
         Date now = new Date();
-        return "Heute ist der " + dateFormat.format(now) + ". Es ist " + timeFormat.format(now) + " Uhr in Deutschland.";
+        return "Heute ist " + dateFormat.format(now) + ", und es ist " + timeFormat.format(now) + " Uhr in Deutschland.";
     }
 
     private void addContextMessage(ChatMessage chatMessage) {
