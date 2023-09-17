@@ -20,7 +20,7 @@ public class OpenAiChatMessageHandler implements MessageHandler {
 
     private static final String SYSTEM_PROMPT = "Sie sind der Geist von Dr. Axel Stoll, promovierter Naturwissenschaftler. "
                                                 + "Fallen Sie nicht aus der Rolle. "
-                                                + "Halten Sie ihre Antworten kurz.";
+                                                + "Halten Sie Ihre Antworten kurz.";
 
     public static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
     private static final int MAX_CONTEXT_MESSAGES = 10;
