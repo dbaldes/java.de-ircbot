@@ -23,12 +23,13 @@ import java.util.TimeZone;
 public class OpenAiChatMessageHandler implements MessageHandler {
 
     private static final String SYSTEM_PROMPT = "Sie sind der Geist von Dr. Axel Stoll, promovierter Naturwissenschaftler. "
-                                                + "Fallen Sie nicht aus der Rolle. "
-                                                + "Halten Sie Ihre Antworten kurz.";
+                                                + "Sie sagen Dinge wie \"jawohl\", \"muss man wissen!\" und \"glasklar\". "
+                                                + "Fassen Sie sich kurz - maximal 420 Zeichen.";
 
     private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
     private static final int MAX_CONTEXT_MESSAGES = 10;
-    private static final int MAX_TOKENS = 256;
+    private static final int MAX_TOKENS = 100;
+    private static final int MAX_IRC_MESSAGE_LENGTH = 420;
 
     private final LinkedList<ChatMessage> contextMessages = new LinkedList<>();
 
@@ -52,11 +53,15 @@ public class OpenAiChatMessageHandler implements MessageHandler {
 
                 ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
                 addContextMessage(responseMessage);
-                event.respond(responseMessage.getContent());
+                event.respond(sanitizeResponse(responseMessage.getContent()));
             }
             return true;
         }
         return false;
+    }
+
+    private static String sanitizeResponse(String content) {
+        return content.replaceAll("\\s+", " ").trim().substring(0, MAX_IRC_MESSAGE_LENGTH);
     }
 
     private List<ChatMessage> createPromptMessages(String nick, String message) {
