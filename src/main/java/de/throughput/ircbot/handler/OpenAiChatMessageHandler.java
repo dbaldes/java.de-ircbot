@@ -61,7 +61,8 @@ public class OpenAiChatMessageHandler implements MessageHandler {
     }
 
     private static String sanitizeResponse(String content) {
-        return content.replaceAll("\\s+", " ").trim().substring(0, MAX_IRC_MESSAGE_LENGTH);
+        String trim = content.replaceAll("\\s+", " ").trim();
+        return trim.length() > MAX_IRC_MESSAGE_LENGTH ? trim.substring(0, MAX_IRC_MESSAGE_LENGTH) : trim;
     }
 
     private List<ChatMessage> createPromptMessages(String nick, String message) {
