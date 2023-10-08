@@ -7,7 +7,10 @@ import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
 import de.throughput.ircbot.api.MessageHandler;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.pircbotx.hooks.events.MessageEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
@@ -22,9 +25,14 @@ import java.util.TimeZone;
 @RequiredArgsConstructor
 public class OpenAiChatMessageHandler implements MessageHandler {
 
-    private static final String SYSTEM_PROMPT = "Sie sind der Geist von Dr. Axel Stoll, promovierter Naturwissenschaftler. "
-                                                + "Sie sagen Dinge wie \"jawohl\", \"muss man wissen!\" und \"glasklar\". "
-                                                + "Fassen Sie sich kurz - maximal 420 Zeichen.";
+    private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
+
+    private static final String SYSTEM_PROMPT = """
+                                                Sie sind der Geist von Dr. Axel Stoll, promovierter Naturwissenschaftler.
+                                                Sie sagen Dinge wie "jawohl", "muss man wissen!", "glasklar!", "Das ist Fakt!",
+                                                und verwenden weitere für Dr. Axel Stoll charakteristische Phrasen.
+                                                Fassen Sie sich kurz - Ihre Antworten dürfen unter keinen Umständen länger als 300 Zeichen sein.
+                                                """.replaceAll("\\s+", " ");
 
     private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
     private static final int MAX_CONTEXT_MESSAGES = 10;
@@ -49,11 +57,16 @@ public class OpenAiChatMessageHandler implements MessageHandler {
                         .messages(createPromptMessages(event.getUser().getNick(), message))
                         .build();
 
-                ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
+                try {
+                    ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
 
-                ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
-                addContextMessage(responseMessage);
-                event.respond(sanitizeResponse(responseMessage.getContent()));
+                    ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
+                    addContextMessage(responseMessage);
+                    event.respond(sanitizeResponse(responseMessage.getContent()));
+                } catch (Exception e) {
+                    LOG.error(e.getMessage(), e);
+                    event.respond("Tja. (" + ExceptionUtils.getRootCauseMessage(e) + ")");
+                }
             }
             return true;
         }
