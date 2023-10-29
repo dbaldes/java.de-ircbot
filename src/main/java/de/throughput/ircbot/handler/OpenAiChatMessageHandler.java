@@ -6,6 +6,9 @@ import com.theokanning.openai.completion.chat.ChatCompletionResult;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
+import de.throughput.ircbot.api.Command;
+import de.throughput.ircbot.api.CommandEvent;
+import de.throughput.ircbot.api.CommandHandler;
 import de.throughput.ircbot.api.MessageHandler;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.pircbotx.hooks.events.MessageEvent;
@@ -25,27 +28,38 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 
 @Component
-public class OpenAiChatMessageHandler implements MessageHandler {
+public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
+
+    public static final Command CMD_RESET_CONTEXT = new Command("aireset",
+            "aireset - deletes the current context and reads the system prompt from the file system.");
 
     private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
     private static final int MAX_CONTEXT_MESSAGES = 10;
     private static final int MAX_TOKENS = 100;
     private static final int MAX_IRC_MESSAGE_LENGTH = 420;
-    public static final String SHORT_ANSWER_HINT = " (Antwort auf 200 Zeichen begrenzen)";
+    private static final String SHORT_ANSWER_HINT = " (Antwort auf 200 Zeichen begrenzen)";
 
     private final LinkedList<TimedChatMessage> contextMessages = new LinkedList<>();
 
     private final OpenAiService openAiService;
     private final Path systemPromptPath;
+    private String systemPrompt;
 
     public OpenAiChatMessageHandler(OpenAiService openAiService, @Value("${openai.systemPrompt.path}") Path systemPromptPath) {
         this.openAiService = openAiService;
         this.systemPromptPath = systemPromptPath;
+        readSystemPromptFromFile();
+    }
+
+    @Override
+    public Set<Command> getCommands() {
+        return Set.of(CMD_RESET_CONTEXT);
     }
 
     @Override
@@ -59,6 +73,17 @@ public class OpenAiChatMessageHandler implements MessageHandler {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean onCommand(CommandEvent command) {
+        // handles the aireset command
+        synchronized (contextMessages) {
+            contextMessages.clear();
+            readSystemPromptFromFile();
+        }
+        command.respond("system prompt reloaded. context reset complete.");
+        return true;
     }
 
     /**
@@ -97,21 +122,15 @@ public class OpenAiChatMessageHandler implements MessageHandler {
      * Creates the list of prompt messages for the OpenAI API call.
      */
     private List<ChatMessage> createPromptMessages(String nick, String message) {
-        try {
-            String systemPrompt = Files.readString(systemPromptPath);
+        message += SHORT_ANSWER_HINT;
 
-            message += SHORT_ANSWER_HINT;
+        addContextMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick));
 
-            addContextMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick));
-
-            List<ChatMessage> promptMessages = new ArrayList<>();
-            promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
-            promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
-            promptMessages.addAll(contextMessages);
-            return promptMessages;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        List<ChatMessage> promptMessages = new ArrayList<>();
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
+        promptMessages.addAll(contextMessages);
+        return promptMessages;
     }
 
     /**
@@ -146,6 +165,17 @@ public class OpenAiChatMessageHandler implements MessageHandler {
 
         while (contextMessages.size() > MAX_CONTEXT_MESSAGES) {
             contextMessages.removeFirst();
+        }
+    }
+
+    /**
+     * Reads the system prompt from the file system.
+     */
+    private void readSystemPromptFromFile() {
+        try {
+            systemPrompt = Files.readString(systemPromptPath);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
