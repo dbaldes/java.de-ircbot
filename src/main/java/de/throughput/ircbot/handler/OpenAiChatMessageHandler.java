@@ -6,13 +6,17 @@ import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
 import de.throughput.ircbot.api.MessageHandler;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,26 +26,25 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 @Component
-@RequiredArgsConstructor
 public class OpenAiChatMessageHandler implements MessageHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
-
-    private static final String SYSTEM_PROMPT = """
-                                                Sie sind der Geist von Dr. Axel Stoll, promovierter Naturwissenschaftler.
-                                                Sie sagen Dinge wie "jawohl", "muss man wissen!", "glasklar!", "Das ist Fakt!",
-                                                und verwenden weitere für Dr. Axel Stoll charakteristische Phrasen.
-                                                Fassen Sie sich kurz - Ihre Antworten dürfen unter keinen Umständen länger als 300 Zeichen sein.
-                                                """.replaceAll("\\s+", " ");
 
     private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
     private static final int MAX_CONTEXT_MESSAGES = 10;
     private static final int MAX_TOKENS = 100;
     private static final int MAX_IRC_MESSAGE_LENGTH = 420;
+    public static final String SHORT_ANSWER_HINT = " (Antwort auf 200 Zeichen begrenzen)";
 
     private final LinkedList<ChatMessage> contextMessages = new LinkedList<>();
 
     private final OpenAiService openAiService;
+    private final Path systemPromptPath;
+
+    public OpenAiChatMessageHandler(OpenAiService openAiService, @Value("${openai.systemPrompt.path}") Path systemPromptPath) {
+        this.openAiService = openAiService;
+        this.systemPromptPath = systemPromptPath;
+    }
 
     @Override
     public boolean onMessage(MessageEvent event) {
@@ -51,13 +54,13 @@ public class OpenAiChatMessageHandler implements MessageHandler {
             message = message.substring(event.getBot().getNick().length() + 1).trim();
 
             synchronized (contextMessages) {
-                var request = ChatCompletionRequest.builder()
-                        .model(MODEL_GPT_3_5_TURBO)
-                        .maxTokens(MAX_TOKENS)
-                        .messages(createPromptMessages(event.getUser().getNick(), message))
-                        .build();
-
                 try {
+                    var request = ChatCompletionRequest.builder()
+                            .model(MODEL_GPT_3_5_TURBO)
+                            .maxTokens(MAX_TOKENS)
+                            .messages(createPromptMessages(event.getUser().getNick(), message))
+                            .build();
+
                     ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
 
                     ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
@@ -79,13 +82,21 @@ public class OpenAiChatMessageHandler implements MessageHandler {
     }
 
     private List<ChatMessage> createPromptMessages(String nick, String message) {
-        ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), message, nick);
-        addContextMessage(chatMessage);
-        List<ChatMessage> promptMessages = new ArrayList<>();
-        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), SYSTEM_PROMPT));
-        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
-        promptMessages.addAll(contextMessages);
-        return promptMessages;
+        try {
+            String systemPrompt = Files.readString(systemPromptPath);
+
+            message += SHORT_ANSWER_HINT;
+
+            ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), message, nick);
+            addContextMessage(chatMessage);
+            List<ChatMessage> promptMessages = new ArrayList<>();
+            promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
+            promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
+            promptMessages.addAll(contextMessages);
+            return promptMessages;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private String getDatePrompt() {

@@ -1,11 +1,10 @@
 package de.throughput.ircbot;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.util.concurrent.ExecutionException;
-import javax.net.ssl.SSLSocketFactory;
-
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.YouTubeRequestInitializer;
 import com.theokanning.openai.service.OpenAiService;
+import com.twitter.clientlib.TwitterCredentialsBearer;
+import com.twitter.clientlib.api.TwitterApi;
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -22,12 +21,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.YouTubeRequestInitializer;
-import com.twitter.clientlib.TwitterCredentialsBearer;
-import com.twitter.clientlib.api.TwitterApi;
-import com.twitter.clientlib.auth.TwitterOAuth20AppOnlyService;
+
+import javax.net.ssl.SSLSocketFactory;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.time.Duration;
 
 @SpringBootApplication
 @EnableRabbit
@@ -44,7 +42,6 @@ public class IrcBotMain {
 
     @Bean
     public CommandLineRunner configure(PircBotX bot) {
-
         return (String... arguments) -> {
             try (bot) {
                 bot.startBot();
@@ -143,7 +140,7 @@ public class IrcBotMain {
 
     @Bean
     public OpenAiService openAiService(@Value("${openai.apiKey}") String apiKey) {
-        return new OpenAiService(apiKey);
+        return new OpenAiService(apiKey, Duration.ofSeconds(20));
     }
 
 }
