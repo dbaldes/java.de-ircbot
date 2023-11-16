@@ -11,8 +11,10 @@ import de.throughput.ircbot.api.CommandHandler;
  * Lagerfeld command handler.
  * <p>
  * !lagerfeld <text> - responds with a Lagerfeld quote.
+ * @deprecated disabled - replaced with {@link LagerfeldAiCommandHandler}.
  */
-@Component
+//@Component
+@Deprecated
 public class LagerfeldCommandHandler implements CommandHandler {
 
     private static final Command CMD_LAGERFELD = new Command("lagerfeld", "lagerfeld <text> - responds with a Lagerfeld quote.");
