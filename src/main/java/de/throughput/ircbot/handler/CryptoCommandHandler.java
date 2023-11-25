@@ -161,7 +161,7 @@ public class CryptoCommandHandler implements CommandHandler {
                     String quoteCurrencyCode = currencyQuote.getKey();
                     CmcQuote quote = currencyQuote.getValue();
                     String priceColor = quote.getPercentChange24h()
-                            .compareTo(BigDecimal.ZERO) >= 0 ? Colors.GREEN : Colors.RED;
+                            .compareTo(BigDecimal.ZERO) >= 0 ? Colors.DARK_GREEN : Colors.RED;
                     return String.format("%s: %s%s (%+.1f%%)%s", renderSymbol(query.getAmount(), c.getName()), priceColor,
                             renderPrice(query.getAmount(), quote.getPrice(), quoteCurrencyCode), quote.getPercentChange24h(), Colors.NORMAL);
                 })

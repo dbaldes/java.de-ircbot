@@ -87,7 +87,7 @@ public class StockCommandHandler implements CommandHandler {
 
                     StockQuote quote = stock.getQuote();
                     String priceColor = quote.getChange()
-                            .compareTo(BigDecimal.ZERO) >= 0 ? Colors.GREEN : Colors.RED;
+                            .compareTo(BigDecimal.ZERO) >= 0 ? Colors.DARK_GREEN : Colors.RED;
                     return String.format("%s: %s%s (%+.2f)%s", stock.getSymbol(), priceColor, renderPrice(quote.getPrice(), stock.getCurrency()),
                             quote.getChange(), Colors.NORMAL);
                 })
