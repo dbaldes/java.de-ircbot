@@ -21,7 +21,9 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.pircbotx.Colors;
+import org.pircbotx.PircBotX;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -46,29 +48,54 @@ public class CryptoCommandHandler implements CommandHandler {
 
     private static final String API_URL_QUOTES_LATEST = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest";
     private static final String API_URL_LISTINGS_LATEST = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
-    private final String cmcApiKey;
 
     public static final Command CMD_CRYPTO = new Command("crypto", "crypto [<amount>] <symbols> [in <currency>] - "
             + "get price information on crypto currencies - currency defaults to USD, amount to 1");
+    private static final Command CMD_TLAST = new Command("tlast", "tlast - get the latest bitcoin price in USD if gribble isn't online");
 
-    public CryptoCommandHandler(@Value("${coinmarketcap.api.key}") String cmcApiKey) {
+    private final String cmcApiKey;
+    private final PircBotX bot;
+
+
+    public CryptoCommandHandler(@Value("${coinmarketcap.api.key}") String cmcApiKey, @Lazy PircBotX bot) {
         this.cmcApiKey = cmcApiKey;
+        this.bot = bot;
     }
 
     @Override
     public Set<Command> getCommands() {
-        return Set.of(CMD_CRYPTO);
+        return Set.of(CMD_CRYPTO, CMD_TLAST);
     }
 
     @Override
     public boolean onCommand(CommandEvent command) {
+        if (command.getCommand().equals(CMD_TLAST)) {
+            handleTlastCommand(command);
+        } else if (command.getCommand().equals(CMD_CRYPTO)) {
+            handleCryptoCommand(command);
+        }
+        return true;
+    }
+
+    private void handleCryptoCommand(CommandEvent command) {
         command.getArgLine()
                 .map(this::toCmcQuery)
                 .ifPresentOrElse(
                         query -> getPriceInfo(command, query),
                         () -> getPriceInfo(command, new CmcTopCurrenciesQuery()));
+    }
 
-        return true;
+    private void handleTlastCommand(CommandEvent command) {
+        if (!isGribbleOnline()) {
+            CmcLatestQuoteQuery btcQuery = new CmcLatestQuoteQuery();
+            btcQuery.setSymbol("BTC");
+            getPriceInfo(command, btcQuery);
+        }
+    }
+
+    private boolean isGribbleOnline() {
+        return bot.getUserChannelDao().getAllUsers().stream()
+                .anyMatch(user -> user.getNick().equalsIgnoreCase("gribble"));
     }
 
     private CmcLatestQuoteQuery toCmcQuery(String input) {
@@ -89,7 +116,6 @@ public class CryptoCommandHandler implements CommandHandler {
                 .split("[\\s,;|]+")));
         return query;
     }
-
 
     private void getPriceInfo(CommandEvent command, CmcQuery query) {
         URI uri = URI.create(query.toUrl());
