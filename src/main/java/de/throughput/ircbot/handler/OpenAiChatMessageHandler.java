@@ -28,8 +28,10 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler {
@@ -37,7 +39,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
 
     public static final Command CMD_RESET_CONTEXT = new Command("aireset",
-            "aireset - deletes the current context and reads the system prompt from the file system.");
+            "aireset - deletes the current context for the channel and reloads the system prompt from the file system.");
 
     private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
     private static final int MAX_CONTEXT_MESSAGES = 10;
@@ -45,7 +47,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private static final int MAX_IRC_MESSAGE_LENGTH = 420;
     private static final String SHORT_ANSWER_HINT = " (Antwort auf 200 Zeichen begrenzen)";
 
-    private final LinkedList<TimedChatMessage> contextMessages = new LinkedList<>();
+    private final Map<String, LinkedList<TimedChatMessage>> contextMessagesPerChannel = new ConcurrentHashMap<>();
 
     private final OpenAiService openAiService;
     private final Path systemPromptPath;
@@ -78,10 +80,13 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     @Override
     public boolean onCommand(CommandEvent command) {
         // handles the aireset command
-        synchronized (contextMessages) {
-            contextMessages.clear();
-            readSystemPromptFromFile();
+        var contextMessages = contextMessagesPerChannel.get(command.getEvent().getChannel().getName());
+        if (contextMessages != null) {
+            synchronized (contextMessages) {
+                contextMessages.clear();
+            }
         }
+        readSystemPromptFromFile();
         command.respond("system prompt reloaded. context reset complete.");
         return true;
     }
@@ -90,18 +95,20 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
      * Generates a response to the given (trimmed) message using the OpenAI API.
      */
     private void generateResponse(MessageEvent event, String message) {
+        var contextMessages = contextMessagesPerChannel.computeIfAbsent(event.getChannel().getName(), k -> new LinkedList<>());
         synchronized (contextMessages) {
             try {
+                String channel = event.getChannel().getName();
                 var request = ChatCompletionRequest.builder()
                         .model(MODEL_GPT_3_5_TURBO)
                         .maxTokens(MAX_TOKENS)
-                        .messages(createPromptMessages(event.getUser().getNick(), message))
+                        .messages(createPromptMessages(contextMessages, channel, event.getUser().getNick(), message))
                         .build();
 
                 ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
 
                 ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
-                addContextMessage(responseMessage);
+                contextMessages.add(new TimedChatMessage(responseMessage));
                 event.respond(sanitizeResponse(responseMessage.getContent()));
             } catch (Exception e) {
                 LOG.error(e.getMessage(), e);
@@ -121,10 +128,11 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     /**
      * Creates the list of prompt messages for the OpenAI API call.
      */
-    private List<ChatMessage> createPromptMessages(String nick, String message) {
+    private List<ChatMessage> createPromptMessages(LinkedList<TimedChatMessage> contextMessages, String channel, String nick, String message) {
         message += SHORT_ANSWER_HINT;
 
-        addContextMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick));
+        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick)));
+        pruneOldMessages(contextMessages);
 
         List<ChatMessage> promptMessages = new ArrayList<>();
         promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
@@ -148,21 +156,11 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     }
 
     /**
-     * Adds a message to the context.
-     */
-    private void addContextMessage(ChatMessage chatMessage) {
-        contextMessages.add(new TimedChatMessage(chatMessage));
-        pruneOldMessages();
-    }
-
-    /**
      * Removes old messages from the context.
      */
-    private void pruneOldMessages() {
+    private void pruneOldMessages(LinkedList<TimedChatMessage> contextMessages) {
         LocalDateTime twoHoursAgo = LocalDateTime.now().minusHours(2);
-
         contextMessages.removeIf(message -> message.getTimestamp().isBefore(twoHoursAgo));
-
         while (contextMessages.size() > MAX_CONTEXT_MESSAGES) {
             contextMessages.removeFirst();
         }
