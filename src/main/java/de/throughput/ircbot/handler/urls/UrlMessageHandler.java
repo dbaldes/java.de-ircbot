@@ -1,15 +1,14 @@
 package de.throughput.ircbot.handler.urls;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
+import de.throughput.ircbot.IrcBotConfig;
+import de.throughput.ircbot.api.MessageHandler;
 import lombok.RequiredArgsConstructor;
-import org.pircbotx.User;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.springframework.stereotype.Component;
 
-import de.throughput.ircbot.IrcBotConfig;
-import de.throughput.ircbot.api.MessageHandler;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
 
 /**
  * Handles messages with URLs by passing the URLs to {@link UrlProcessor}s.
@@ -19,7 +18,6 @@ import de.throughput.ircbot.api.MessageHandler;
 public class UrlMessageHandler implements MessageHandler {
 
     private final IrcBotConfig botConfig;
-    private final UrlSinkService urlSink;
     private final List<UrlProcessor> urlProcessors;
     private final HtmlTitleUrlProcessor htmlTitleFallback;
 
@@ -46,16 +44,6 @@ public class UrlMessageHandler implements MessageHandler {
                             htmlTitleFallback.process(urlString, event);
                         }
                     }
-
-                    String hostname = event.getBot()
-                            .getConfiguration()
-                            .getServers()
-                            .get(0)
-                            .getHostname();
-                    User user = event.getUser();
-                    this.urlSink.processUrl(hostname, event.getChannel()
-                                    .getName(), user.getNick(), user.getLogin(),
-                            user.getHostname(), urlString);
                 });
         return false;
     }

@@ -10,11 +10,6 @@ import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.cap.TLSCapHandler;
-import org.springframework.amqp.rabbit.annotation.EnableRabbit;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -28,7 +23,6 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 
 @SpringBootApplication
-@EnableRabbit
 @EnableScheduling
 public class IrcBotMain {
 
@@ -110,18 +104,6 @@ public class IrcBotMain {
         if (botConfig.isSsl() && botConfig.isTls()) {
             throw new IllegalArgumentException("choose one of SSL or TLS");
         }
-    }
-
-    @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
-    }
-
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(jsonMessageConverter());
-        return template;
     }
 
     @Bean
