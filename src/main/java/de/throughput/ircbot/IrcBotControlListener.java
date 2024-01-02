@@ -61,8 +61,7 @@ public class IrcBotControlListener extends ListenerAdapter {
             if (parts.length == 3 && "ACC".equals(parts[1])) {
                 String nick = parts[0];
                 String accessLevel = parts[2];
-                if (LOGGED_IN_ACCLEVEL.equals(accessLevel) && botConfig.getAdmins()
-                        .contains(nick)) {
+                if (LOGGED_IN_ACCLEVEL.equals(accessLevel) && botConfig.getAdmins().contains(nick)) {
                     putAuth(nick);
                     PrivateMessageEvent originalEvent = queuedCommand.remove(nick);
                     if (originalEvent != null) {

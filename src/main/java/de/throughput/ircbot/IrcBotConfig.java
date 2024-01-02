@@ -75,6 +75,9 @@ public class IrcBotConfig {
     @Value("#{'${ircbot.factoid.channels}'.split(',')}")
     private Set<String> factoidChannels;
 
+    /**
+     * Admin nicks.
+     */
     @Value("#{'${ircbot.admins}'.split(',')}")
     private Set<String> admins;
 
