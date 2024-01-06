@@ -21,7 +21,7 @@ import de.throughput.ircbot.api.CommandHandler;
 @Component
 public class ThaiGoldCommandHandler implements CommandHandler {
 
-    private static final String API_URL_LATEST = "https://api.chnwt.dev/thai-gold-api/latest";
+    private static final String API_URL_LATEST = "https://helsinki.throughput.de/thaigold";
 
     private static final Command CMD_THAIGOLD = new Command("thaigold", "thaigold - get current thai gold price information");
 
@@ -45,13 +45,9 @@ public class ThaiGoldCommandHandler implements CommandHandler {
 
     private void processResponse(CommandEvent command, HttpResponse<String> httpResponse) {
         ThaiGoldResponse response = new Gson().fromJson(httpResponse.body(), ThaiGoldResponse.class);
-
-        ResponseData data = response.getResponse();
-        PriceData goldBar = data.getPrice()
-                .getGold_bar();
         // note: the API returns the gold sale price as "buy" and buy back price as "sell"
-        String message = String.format("Thai gold price: bar sell \u0e3f%s buy \u0e3f%s (%s %s)",
-                goldBar.getBuy(), goldBar.getSell(), data.getUpdate_time(), data.getDate());
+        String message = String.format("Thai gold price: bar sell \u0e3f%s buy \u0e3f%s (%s)",
+                response.getBar_sell(), response.getBar_buy(), response.getDate_time());
 
         command.respond(message);
     }
@@ -59,30 +55,9 @@ public class ThaiGoldCommandHandler implements CommandHandler {
     @Getter
     @Setter
     private static class ThaiGoldResponse {
-        private String status;
-        private ResponseData response;
-    }
-
-    @Getter
-    @Setter
-    private static class ResponseData {
-        private String date;
-        private String update_time;
-        private GoldPrice price;
-    }
-
-    @Getter
-    @Setter
-    private static class GoldPrice {
-        private PriceData gold;
-        private PriceData gold_bar;
-    }
-
-    @Getter
-    @Setter
-    private static class PriceData {
-        private String buy;
-        private String sell;
+        private String date_time;
+        private String bar_sell;
+        private String bar_buy;
     }
 
 }
