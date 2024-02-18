@@ -3,6 +3,7 @@ package de.throughput.ircbot.handler;
 import static de.throughput.ircbot.Util.urlEnc;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -39,10 +40,17 @@ import de.throughput.ircbot.api.CommandHandler;
 @Component
 public class CryptoCommandHandler implements CommandHandler {
 
-    private static final Pattern PATTERN_QUOTE_CURRENCY = Pattern.compile("^(.*)\\s+in\\s+(\\w+)\\s*$");
+    // note the special regex which matches letters including umlauts in the second group.
+    private static final Pattern PATTERN_QUOTE_CURRENCY = Pattern.compile("^(.*)\\s+in\\s+([\\p{L}\\d_]+)\\s*$");
     private static final Pattern PATTERN_AMOUNT = Pattern.compile("^(\\d*(\\.\\d+)?)\\s+(.*)$");
     private static final BigDecimal ONE_HUNDREDTH = new BigDecimal("0.01");
     private static final BigDecimal ONE_TENHOUSANDTH = new BigDecimal("0.0001");
+
+    /**
+     * Special currency symbol for #bitcoin-de.
+     */
+    private static final Set<String> KUECHEN_SYMBOLS = Set.of("K\u00dc", "KUE", "K\u00dcCHEN", "KUECHEN");
+    private static final BigDecimal KUECHE_IN_EUR = BigDecimal.valueOf(4000L);
 
     private static final String USD = "USD";
 
@@ -103,8 +111,7 @@ public class CryptoCommandHandler implements CommandHandler {
         Matcher matcher = PATTERN_QUOTE_CURRENCY.matcher(input);
         String symbols = input;
         if (matcher.matches()) {
-            query.setConvert(matcher.group(2)
-                    .toUpperCase());
+            query.setConvert(matcher.group(2).toUpperCase(Locale.GERMAN));
             symbols = matcher.group(1);
         }
         matcher = PATTERN_AMOUNT.matcher(symbols);
@@ -163,7 +170,7 @@ public class CryptoCommandHandler implements CommandHandler {
                     String priceColor = quote.getPercentChange24h()
                             .compareTo(BigDecimal.ZERO) >= 0 ? Colors.DARK_GREEN : Colors.RED;
                     return String.format("%s: %s%s (%+.1f%%)%s", renderSymbol(query.getAmount(), c.getName()), priceColor,
-                            renderPrice(query.getAmount(), quote.getPrice(), quoteCurrencyCode), quote.getPercentChange24h(), Colors.NORMAL);
+                            renderPrice(query.getAmount(), query.getFactor().multiply(quote.getPrice()), query.getConvertSymbol()), quote.getPercentChange24h(), Colors.NORMAL);
                 })
                 .collect(Collectors.joining(" "))
                 + " (\u039424h)";
@@ -173,7 +180,7 @@ public class CryptoCommandHandler implements CommandHandler {
         return amount.compareTo(BigDecimal.ONE) != 0 ? amount.toPlainString() + " " + symbol : symbol;
     }
 
-    private static String renderPrice(BigDecimal amount, BigDecimal price, String currencyCode) {
+    private static String renderPrice(BigDecimal amount, BigDecimal price, String currencySymbol) {
         BigDecimal total = price.multiply(amount);
 
         int precision = 2;
@@ -185,13 +192,7 @@ public class CryptoCommandHandler implements CommandHandler {
             precision = 4;
         }
 
-        String currencySymbol = currencyCode;
-        try {
-            Currency currency = Currency.getInstance(currencyCode);
-            currencySymbol = currency.getSymbol(Locale.US);
-        } catch (IllegalArgumentException e) {
-            // ignore; it might be a crypto currency
-        }
+
         if (currencySymbol.endsWith("$")) {
             return String.format("%s%." + precision + "f", currencySymbol, total);
         }
@@ -200,13 +201,32 @@ public class CryptoCommandHandler implements CommandHandler {
 
     @Getter
     @Setter
-    private static abstract class CmcQuery {
+    private abstract static class CmcQuery {
         private String convert = USD;
+        private String convertSymbol = "$";
         private BigDecimal amount = BigDecimal.ONE;
+        private BigDecimal factor = BigDecimal.ONE;
 
         abstract String toUrl();
 
         abstract Class<? extends CmcResponse> getResponseClass();
+
+        void setConvert(String convert) {
+            if (KUECHEN_SYMBOLS.contains(convert)) {
+                this.convert = "EUR";
+                convertSymbol = "K\u00fc";
+                factor = BigDecimal.ONE.divide(KUECHE_IN_EUR, 5, RoundingMode.HALF_UP);
+            } else {
+                this.convert = convert;
+                try {
+                    Currency currency = Currency.getInstance(convert);
+                    convertSymbol = currency.getSymbol(Locale.US);
+                } catch (IllegalArgumentException e) {
+                    // might be a cryptocurrency
+                    convertSymbol = "";
+                }
+            }
+        }
     }
 
     @Getter
