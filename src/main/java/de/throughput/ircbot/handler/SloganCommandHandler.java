@@ -43,7 +43,7 @@ public class SloganCommandHandler implements CommandHandler {
      * After posting a random slogan, the bot will keep quiet on all channels for
      * at least this many seconds.
      */
-    private static final long RANDOM_SLOGAN_COOLDOWN_SECONDS = 600;
+    private static final long RANDOM_SLOGAN_COOLDOWN_SECONDS = 1800;
 
     private static final Command CMD_SLOGAN = new Command("slogan",
             "!slogan - enhance morale of the plebs by shouting a slogan.");
@@ -183,9 +183,9 @@ public class SloganCommandHandler implements CommandHandler {
     }
 
     /**
-     * Possibly sends a random quote every minute to active channels.
+     * Possibly sends a random quote every ten minutes to active channels.
      */
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 600000)
     public void scheduledRandomSlogan() {
         long currentTimeEpochMillis = System.currentTimeMillis();
         if (currentTimeEpochMillis - lastSloganTimestampEpochMillis > RANDOM_SLOGAN_COOLDOWN_SECONDS * 1000L) {
@@ -211,7 +211,7 @@ public class SloganCommandHandler implements CommandHandler {
                         """
                             SELECT channel 
                               FROM seen 
-                             WHERE timestamp > NOW() - INTERVAL '10 minutes' 
+                             WHERE timestamp > NOW() - INTERVAL '10 minutes' AND nick <> 'gribble'
                              GROUP BY channel 
                             HAVING COUNT(nick) > 2;
                             """, String.class)
