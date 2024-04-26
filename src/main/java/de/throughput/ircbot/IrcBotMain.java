@@ -3,8 +3,6 @@ package de.throughput.ircbot;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeRequestInitializer;
 import com.theokanning.openai.service.OpenAiService;
-import com.twitter.clientlib.TwitterCredentialsBearer;
-import com.twitter.clientlib.api.TwitterApi;
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -112,12 +110,6 @@ public class IrcBotMain {
                 com.google.api.client.json.jackson2.JacksonFactory.getDefaultInstance(), null).setApplicationName("ircbot")
                 .setYouTubeRequestInitializer(new YouTubeRequestInitializer(apiKey))
                 .build();
-    }
-
-    @Bean
-    public TwitterApi twitter(@Value("${twitter.bearerToken}") String bearerToken) {
-        TwitterCredentialsBearer credentials = new TwitterCredentialsBearer(bearerToken);
-        return new TwitterApi(credentials);
     }
 
     @Bean
