@@ -41,7 +41,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     public static final Command CMD_RESET_CONTEXT = new Command("aireset",
             "aireset - deletes the current context for the channel and reloads the system prompt from the file system.");
 
-    private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
+    private static final String MODEL_NAME = "gpt-4o";
     private static final int MAX_CONTEXT_MESSAGES = 10;
     private static final int MAX_TOKENS = 100;
     private static final int MAX_IRC_MESSAGE_LENGTH = 420;
@@ -100,7 +100,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
             try {
                 String channel = event.getChannel().getName();
                 var request = ChatCompletionRequest.builder()
-                        .model(MODEL_GPT_3_5_TURBO)
+                        .model(MODEL_NAME)
                         .maxTokens(MAX_TOKENS)
                         .messages(createPromptMessages(contextMessages, channel, event.getUser().getNick(), message))
                         .build();
