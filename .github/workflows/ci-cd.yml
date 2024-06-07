@@ -1,0 +1,57 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v2
+        with:
+          java-version: '21'
+          distribution: 'adopt'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven
+
+      - name: Build with Maven
+        run: mvn install -DskipTests
+
+      - name: Test with Maven
+        run: mvn test
+
+      - name: Build Docker image
+        run: docker build --build-arg jarfile=target/ircbot-0.9.0-SNAPSHOT.jar -t docker.throughput.de:5000/ircbot:latest .
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin docker.throughput.de:5000
+
+      - name: Push Docker image
+        run: docker push docker.throughput.de:5000/ircbot:latest
+
+      - name: Deploy to Server
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no service@helsinki.throughput.de -t << 'EOF'
+            cd docker/ircbot
+            docker-compose down
+            docker-compose pull
+            docker-compose up -d --remove-orphans
+          EOF
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
