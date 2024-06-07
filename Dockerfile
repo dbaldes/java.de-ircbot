@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17
+FROM eclipse-temurin:21
 
 ARG jarfile
 COPY ${jarfile} /ircbot.jar
