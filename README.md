@@ -5,13 +5,12 @@ lingers in  `#java.de` on the [libera](https://libera.chat) IRC network. DrFockI
 a former perl-based bot; some of the old bot's data and functions were incorporated into the new bot. 
 
 Besides providing useful services to the users of this and other channels, this project serves as a test 
-bed for trying out technologies and APIs.
+bed for trying out new technologies and APIs.
 
-The bot is implemented as [spring boot](https://spring.io/projects/spring-boot) application using Java 21
-and [lombok](https://projectlombok.org/), and deployed on a vps as [docker](https://www.docker.com/) container.
-
-Github actions are used to implement a CI/CD pipeline - the bot is automatically deployed when changes 
-are pushed to the master branch and the tests are successful.
+The bot is implemented as [spring boot](https://spring.io/projects/spring-boot) application using Java 21 
+and [lombok](https://projectlombok.org/), and deployed on a vps as [docker](https://www.docker.com/) container. 
+Github actions are used to implement a CI/CD pipeline - the bot is automatically deployed when changes are 
+pushed to the master branch and the tests are successful.
 
 ## Features
 
