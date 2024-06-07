@@ -10,6 +10,9 @@ bed for trying out technologies and APIs.
 The bot is implemented as [spring boot](https://spring.io/projects/spring-boot) application using Java 21
 and [lombok](https://projectlombok.org/), and deployed on a vps as [docker](https://www.docker.com/) container.
 
+Github actions are used to implement a CI/CD pipeline - the bot is automatically deployed when changes 
+are pushed to the master branch and the tests are successful.
+
 ## Features
 
 - The bot will respond to messages if directly addressed by its nick, using the OpenAI chat completion 
