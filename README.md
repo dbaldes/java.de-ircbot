@@ -10,7 +10,8 @@ bed for trying out new technologies and APIs.
 
 The bot is implemented as [spring boot](https://spring.io/projects/spring-boot) application using Java 21 
 and [lombok](https://projectlombok.org/), and deployed on a vps as [docker](https://www.docker.com/) container. 
-Github actions are used to implement a CI/CD pipeline - the bot is automatically deployed when changes are 
+Github actions are used to implement a CI/CD pipeline. Integration tests are run on [PostgreSQL](https://www.postgresql.org/)
+and [InspIRCd](https://www.inspircd.org/). The bot is deployed automatically when changes are 
 pushed to the master branch and the tests are successful.
 
 ## Features
