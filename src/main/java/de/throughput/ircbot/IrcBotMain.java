@@ -8,6 +8,7 @@ import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.cap.TLSCapHandler;
+import org.pircbotx.delay.StaticDelay;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -55,7 +56,7 @@ public class IrcBotMain {
 
         Configuration.Builder config = new Configuration.Builder().setAutoNickChange(true)
                 .setAutoReconnect(true)
-                .setAutoReconnectDelay(DELAY_RECONNECT_MS)
+                .setAutoReconnectDelay(new StaticDelay(DELAY_RECONNECT_MS))
                 .setVersion(VERSION)
                 .setRealName(REALNAME)
                 .addListener(cmdListener)

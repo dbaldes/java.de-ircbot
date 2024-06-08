@@ -66,9 +66,9 @@
             <version>0.18.2</version>
         </dependency>
         <dependency>
-            <groupId>org.pircbotx</groupId>
+            <groupId>com.github.pircbotx</groupId>
             <artifactId>pircbotx</artifactId>
-            <version>2.1</version>
+            <version>2.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -109,6 +109,13 @@
             <url>file://${project.build.directory}/dummy-mvn-repo</url>
         </repository>
     </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
