@@ -53,7 +53,6 @@ public class KarmaHandler implements CommandHandler, MessageHandler {
     public boolean onCommand(CommandEvent command) {
         if (CMD_KARMA.equals(command.getCommand())) {
             command.getArgLine()
-                    .map(String::toLowerCase)
                     .ifPresentOrElse(
                             key -> command.respond(karma(key)),
                             () -> command.respond(command.getCommand()
@@ -68,13 +67,13 @@ public class KarmaHandler implements CommandHandler, MessageHandler {
         if (karma == 0) {
             return String.format("%s has neutral karma.", key);
         } else {
-            return String.format("%s has a karma of %d", key, karma);
+            return String.format("%s has a karma of %d.", key, karma);
         }
     }
 
     private int lookupKarma(String key) {
         try {
-            return jdbc.queryForObject("SELECT karma FROM karma WHERE key = ?", Integer.class, key);
+            return jdbc.queryForObject("SELECT karma FROM karma WHERE key = ?", Integer.class, key.toLowerCase());
         } catch (EmptyResultDataAccessException e) {
             return 0;
         }
@@ -86,14 +85,14 @@ public class KarmaHandler implements CommandHandler, MessageHandler {
         Matcher matcher = PATTERN_KARMA_MESSAGE_PREFIX.matcher(event.getMessage());
         if (matcher.matches()) {
             String key = matcher.group(2);
-            upsert(key.toLowerCase(), "++".equals(matcher.group(1)) ? 1 : -1);
+            upsert(key, "++".equals(matcher.group(1)) ? 1 : -1);
             event.respond(karma(key));
             return false;
         }
         matcher = PATTERN_KARMA_MESSAGE_POSTFIX.matcher(event.getMessage());
         if (matcher.matches()) {
             String key = matcher.group(1);
-            upsert(key.toLowerCase(), "++".equals(matcher.group(2)) ? 1 : -1);
+            upsert(key, "++".equals(matcher.group(2)) ? 1 : -1);
             event.respond(karma(key));
         }
         return false;
@@ -106,9 +105,9 @@ public class KarmaHandler implements CommandHandler, MessageHandler {
      * @param karmaDelta delta
      */
     private void upsert(String key, int karmaDelta) {
-        int affectedRows = jdbc.update("UPDATE karma SET karma = karma + ? WHERE key = ?", karmaDelta, key);
+        int affectedRows = jdbc.update("UPDATE karma SET karma = karma + ? WHERE key = ?", karmaDelta, key.toLowerCase());
         if (affectedRows == 0) {
-            jdbc.update("INSERT INTO karma (key, karma) VALUES (?, ?)", key, karmaDelta);
+            jdbc.update("INSERT INTO karma (key, karma) VALUES (?, ?)", key.toLowerCase(), karmaDelta);
         }
     }
 
