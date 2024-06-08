@@ -5,6 +5,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import de.throughput.ircbot.handler.LagerfeldAiCommandHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,6 +19,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UserRateLimiter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(UserRateLimiter.class);
 
     private final int maxInteractions;
     private final long checkPeriodMillis;
@@ -41,6 +47,7 @@ public class UserRateLimiter {
     public boolean limit(String nick) {
         if (checkInteractions(nick) > maxInteractions) {
             penaltyBench.put(nick, System.currentTimeMillis());
+            LOG.info("user '{}' is rate limited", nick);
             return true;
         }
         return false;
