@@ -81,6 +81,9 @@ public class IrcBotConfig {
     @Value("#{'${ircbot.admins}'.split(',')}")
     private Set<String> admins;
 
-    @Value("${ircbot.bypass.auth}")
-    private boolean bypassAuth;
+    /**
+     * If true, authentication and rate limiting is disabled for integration testing.
+     */
+    @Value("${ircbot.testmode}")
+    private boolean testMode;
 }

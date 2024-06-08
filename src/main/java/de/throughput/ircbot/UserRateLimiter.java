@@ -28,14 +28,18 @@ public class UserRateLimiter {
     private final Map<String, Set<Long>> botInteractionTimesByNick = new HashMap<>();
     private final Map<String, Long> penaltyBench = new ConcurrentHashMap<>();
 
+    private final IrcBotConfig config;
+
     @Autowired
     public UserRateLimiter(
             @Value("${ircbot.ratelimit.maxInteractions}") int maxInteractions,
             @Value("${ircbot.ratelimit.checkPeriodMillis}") long checkPeriodMillis,
-            @Value("${ircbot.ratelimit.penaltyMillis}") long penaltyMillis) {
+            @Value("${ircbot.ratelimit.penaltyMillis}") long penaltyMillis,
+            IrcBotConfig config) {
         this.maxInteractions = maxInteractions;
         this.checkPeriodMillis = checkPeriodMillis;
         this.penaltyMillis = penaltyMillis;
+        this.config = config;
     }
 
     /**
@@ -45,6 +49,9 @@ public class UserRateLimiter {
      * @return if {@code true}, the user has exceeded the limit
      */
     public boolean limit(String nick) {
+        if (config.isTestMode()) {
+            return false;
+        }
         if (checkInteractions(nick) > maxInteractions) {
             penaltyBench.put(nick, System.currentTimeMillis());
             LOG.info("user '{}' is rate limited", nick);

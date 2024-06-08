@@ -118,10 +118,10 @@ public class IrcBotControlListener extends ListenerAdapter {
     /**
      * Tells if we're bypassing NickServ authentication for test setups.
      *
-     * @return true if on localhost
+     * @return true if on bypassing
      */
     private boolean isBypassAuth(PrivateMessageEvent event) {
-        return botConfig.isBypassAuth();
+        return botConfig.isTestMode();
     }
 
     /**
