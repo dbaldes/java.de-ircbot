@@ -81,4 +81,6 @@ public class IrcBotConfig {
     @Value("#{'${ircbot.admins}'.split(',')}")
     private Set<String> admins;
 
+    @Value("${ircbot.bypass.auth}")
+    private boolean bypassAuth;
 }

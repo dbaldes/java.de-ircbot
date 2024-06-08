@@ -1,14 +1,15 @@
 package de.throughput.ircbot;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.pircbotx.User;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.NoticeEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Listens for commands from private messages.
@@ -33,19 +34,15 @@ public class IrcBotControlListener extends ListenerAdapter {
     public void onPrivateMessage(PrivateMessageEvent event) throws Exception {
         User user = event.getUser();
         if (user != null) {
-            if (isAuth(user
-                    .getNick())) {
+            if (isBypassAuth(event) || isAuth(user.getNick())) {
                 processCommand(event);
-            } else if (botConfig.getAdmins()
-                    .contains(user
-                            .getNick())) {
+            } else if (botConfig.getAdmins().contains(user.getNick())) {
                 // not authed; if this is an admin user, store message and ask NickServ for account info
-                queuedCommand.put(user
-                        .getNick(), event);
+                // the response will be processed in onNotice()
+                queuedCommand.put(user.getNick(), event);
                 event.getBot()
                         .send()
-                        .message(NICKSERV, "ACC " + user
-                                .getNick());
+                        .message(NICKSERV, "ACC " + user.getNick());
             }
         }
     }
@@ -56,8 +53,7 @@ public class IrcBotControlListener extends ListenerAdapter {
                 .getNick()
                 .equals(NICKSERV)) {
             // message should be e.g. "db ACC 3"
-            String[] parts = event.getMessage()
-                    .split("\\s+", 3);
+            String[] parts = event.getMessage().split("\\s+", 3);
             if (parts.length == 3 && "ACC".equals(parts[1])) {
                 String nick = parts[0];
                 String accessLevel = parts[2];
@@ -75,8 +71,7 @@ public class IrcBotControlListener extends ListenerAdapter {
     }
 
     private static void processCommand(PrivateMessageEvent event) {
-        String[] messageParts = event.getMessage()
-                .split("\\s+", 2);
+        String[] messageParts = event.getMessage().split("\\s+", 2);
         if (messageParts.length == 2) {
             String command = messageParts[0];
             String arguments = messageParts[1];
@@ -108,7 +103,6 @@ public class IrcBotControlListener extends ListenerAdapter {
         }
     }
 
-
     /**
      * Tell if the given nick is considered an authorized admin.
      *
@@ -118,8 +112,16 @@ public class IrcBotControlListener extends ListenerAdapter {
     private boolean isAuth(String nick) {
         LocalDateTime lastseen = this.authedAdmins.get(nick);
 
-        return lastseen != null && lastseen.plusMinutes(AUTH_TIMEOUT_MINUTES)
-                .isAfter(LocalDateTime.now());
+        return lastseen != null && lastseen.plusMinutes(AUTH_TIMEOUT_MINUTES).isAfter(LocalDateTime.now());
+    }
+
+    /**
+     * Tells if we're bypassing NickServ authentication for test setups.
+     *
+     * @return true if on localhost
+     */
+    private boolean isBypassAuth(PrivateMessageEvent event) {
+        return botConfig.isBypassAuth();
     }
 
     /**
