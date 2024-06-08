@@ -25,10 +25,11 @@ pushed to the master branch and the tests are successful.
   such as YouTube URLs (this one uses the YouTube API to retrieve information on the video).
 - If the channel is active, the bot will occasionally post encouraging comments to the channel that have
   been added by users using the `!addslogan` command.
-- The bot keeps track of each user's karma, which can be increased or decreased using `++nick` and `--nick` 
-  respectively.
+- The bot keeps track of things' karma, which can be increased or decreased using `string++` and `string--`, 
+  or `++string` and `--string`, respectively. This is often used with nicks, but can be anything, like `++coffee`,
+  `++cats` or `--prostate exam`. Karma can be queried with the `!karma` command.
 - The bot keeps track of when users where last seen on the channel (meaning when they last said something, 
-  and what they said).
+  and what they said). This information can be queried using the `!seen` command.
 - The bot stores facts that are told on the channel. A fact is detected when someone says 
   `<something> is/are <something>`. If `<something>` is later mentioned on its own, the bot will post
   any facts it knows about that thing.

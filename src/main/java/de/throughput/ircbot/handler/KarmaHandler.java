@@ -28,11 +28,18 @@ public class KarmaHandler implements CommandHandler, MessageHandler {
     private static final Command CMD_KARMA = new Command("karma", "Usage: !karma <nick or thing> - shows the recorded karma for <nick or thing>");
 
     /**
+     * Matches any message starting in ++ or --, ignoring pending or trailing white space;
+     * match group 1 is the operator, group 2 the key.
+     * Key must be 2 to 255 characters long.
+     */
+    private static final Pattern PATTERN_KARMA_MESSAGE_PREFIX = Pattern.compile("^\\s*(\\+\\+|\\-\\-)\\s*(.*{1,254}\\S)\\s*$");
+
+    /**
      * Matches any message ending in ++ or --, ignoring pending or trailing white space;
      * match group 1 is the key, group 2 the operator.
      * Key must be 2 to 255 characters long.
      */
-    private static final Pattern PATTERN_KARMA_MESSAGE = Pattern.compile("^\\s*(.*{1,254}\\S)\\s*(\\+\\+|\\-\\-)\\s*$");
+    private static final Pattern PATTERN_KARMA_MESSAGE_POSTFIX = Pattern.compile("^\\s*(.*{1,254}\\S)\\s*(\\+\\+|\\-\\-)\\s*$");
 
     private final JdbcTemplate jdbc;
 
@@ -76,10 +83,18 @@ public class KarmaHandler implements CommandHandler, MessageHandler {
     @Override
     @Transactional
     public boolean onMessage(MessageEvent event) {
-        Matcher matcher = PATTERN_KARMA_MESSAGE.matcher(event.getMessage());
+        Matcher matcher = PATTERN_KARMA_MESSAGE_PREFIX.matcher(event.getMessage());
         if (matcher.matches()) {
-            upsert(matcher.group(1)
-                    .toLowerCase(), "++".equals(matcher.group(2)) ? 1 : -1);
+            String key = matcher.group(2);
+            upsert(key.toLowerCase(), "++".equals(matcher.group(1)) ? 1 : -1);
+            event.respond(karma(key));
+            return false;
+        }
+        matcher = PATTERN_KARMA_MESSAGE_POSTFIX.matcher(event.getMessage());
+        if (matcher.matches()) {
+            String key = matcher.group(1);
+            upsert(key.toLowerCase(), "++".equals(matcher.group(2)) ? 1 : -1);
+            event.respond(karma(key));
         }
         return false;
     }
