@@ -171,7 +171,11 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
      */
     private void readSystemPromptFromFile() {
         try {
-            systemPrompt = Files.readString(systemPromptPath);
+            if (systemPromptPath != null) {
+                systemPrompt = Files.readString(systemPromptPath);
+            } else {
+                LOG.warn("system prompt path not specified");
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
