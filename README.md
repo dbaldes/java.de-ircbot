@@ -1,8 +1,9 @@
-# DrFockIt - the #java.de IRC bot
+# DrMockIt - the #java.de IRC bot
 
-This is the source code of DrFockIt, a [pircbotx](https://github.com/pircbotx/pircbotx)-based IRC bot which 
-lingers in  `#java.de` on the [libera](https://libera.chat) IRC network. DrFockIt is the successor of DrRockIt, 
-a former perl-based bot; some of the old bot's data and functions were incorporated into the new bot. 
+This is the source code of DrMockIt, a [pircbotx](https://github.com/pircbotx/pircbotx)-based IRC bot which 
+lingers in  `#java.de` on the [libera](https://libera.chat) IRC network. DrMockIt is the successor of 
+DrRockIt, a former perl-based bot; some of the old bot's data and functions were incorporated into the 
+new bot. 
 
 Besides providing useful services to the users of this and other channels, this project serves as a test 
 bed for trying out new technologies and APIs.

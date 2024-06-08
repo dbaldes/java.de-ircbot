@@ -50,7 +50,7 @@ public class UserRateLimiter {
      * Tells if a user should be ignored because they exceeded the limit.
      *
      * @param nick nick
-     * @return {@core true} if the user has exceeded the limit within the last {@code ircbot.ratelimit.penaltyMillis} milliseconds
+     * @return {@code true} if the user has exceeded the limit within the last {@code ircbot.ratelimit.penaltyMillis} milliseconds
      */
     public boolean ignore(String nick) {
         return System.currentTimeMillis() - penaltyBench.getOrDefault(nick, 0L) < penaltyMillis;
@@ -81,7 +81,6 @@ public class UserRateLimiter {
         synchronized (botInteractionTimesByNick) {
             long cutOff = System.currentTimeMillis() - checkPeriodMillis;
             botInteractionTimesByNick.values()
-                    .stream()
                     .forEach(interactionTimes -> interactionTimes.removeIf(time -> time < cutOff));
         }
     }

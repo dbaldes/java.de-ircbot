@@ -165,7 +165,6 @@ public class CryptoCommandHandler implements CommandHandler {
                             .entrySet()
                             .iterator()
                             .next();
-                    String quoteCurrencyCode = currencyQuote.getKey();
                     CmcQuote quote = currencyQuote.getValue();
                     String priceColor = quote.getPercentChange24h()
                             .compareTo(BigDecimal.ZERO) >= 0 ? Colors.DARK_GREEN : Colors.RED;

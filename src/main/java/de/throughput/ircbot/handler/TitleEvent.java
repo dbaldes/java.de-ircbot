@@ -6,7 +6,7 @@ import org.springframework.context.ApplicationEvent;
 @Getter
 public class TitleEvent extends ApplicationEvent {
 
-    private String title;
+    private final String title;
 
     public TitleEvent(Object source, String title) {
         super(source);

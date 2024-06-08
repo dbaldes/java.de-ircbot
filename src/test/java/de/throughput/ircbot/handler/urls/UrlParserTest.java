@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-public class UrlParserTest {
+class UrlParserTest {
 
     // some random URLs
     private static final List<String> URLS = List.of(
@@ -36,13 +36,13 @@ public class UrlParserTest {
     );
 
     @Test
-    public void testStreamUrls() {
+    void testStreamUrls() {
         String text = text();
 
         List<String> urls = UrlParser.streamUrls(text)
                 .collect(Collectors.toList());
 
-        assertEquals(urls, URLS);
+        assertEquals(URLS, urls);
     }
 
     private static String text() {

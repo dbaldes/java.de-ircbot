@@ -77,7 +77,7 @@ public class YahooScrapeCommandHandler implements CommandHandler {
                 Element priceChange = priceChanges.get(i);
                 priceChangeText = priceChange.text();
             }
-            if (price != null && i == 0) {
+            if (i == 0) {
                 String result = price.text() + " " + currencyCode + " (" + priceChangeText + ")";
                 allPrices.append(result);
 

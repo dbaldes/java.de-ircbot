@@ -19,7 +19,7 @@ public class RouletteCommandHandler implements CommandHandler {
                     + "!roulette - pull the trigger");
 
     private static final int CHAMBERS = 6;
-    private Random rand = new Random();
+    private final Random rand = new Random();
     private int chamber;
 
     public RouletteCommandHandler() {

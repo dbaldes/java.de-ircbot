@@ -31,7 +31,7 @@ public class SeenHandler implements CommandHandler, MessageHandler {
 
     private static final Command CMD_SEEN = new Command("seen", "Usage: !seen <nick>");
 
-    private JdbcTemplate jdbc;
+    private final JdbcTemplate jdbc;
 
     @Autowired
     public SeenHandler(JdbcTemplate jdbc) {

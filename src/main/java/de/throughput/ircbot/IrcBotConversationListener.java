@@ -89,7 +89,7 @@ public class IrcBotConversationListener extends ListenerAdapter {
                             .getCommand()
                             .compareTo(b.getLeft()
                                     .getCommand()))
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (matches.size() == 1) {
                 handleCommand(commandPrefix.get(), event, argLine, matches.get(0));

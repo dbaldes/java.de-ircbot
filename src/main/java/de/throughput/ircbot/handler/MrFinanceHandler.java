@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.jetbrains.annotations.NotNull;
 import org.pircbotx.PircBotX;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.springframework.context.ApplicationListener;
@@ -14,13 +16,15 @@ import de.throughput.ircbot.api.MessageHandler;
 
 /**
  * Deals with mrfinance, a bot.
+ * @deprecated haven't seen mrfinance around for some time
  */
-@Component
+//@Component
+@Deprecated
 public class MrFinanceHandler implements MessageHandler, ApplicationListener<TitleEvent> {
 
     private static final String MRFINANCE = "mrfinance";
 
-    private Lock lock = new ReentrantLock();
+    private final Lock lock = new ReentrantLock();
     private final PircBotX bot;
     private TitleEvent lastTitleEvent;
     private QuoteMessage lastMrFinanceMessage;
@@ -58,7 +62,7 @@ public class MrFinanceHandler implements MessageHandler, ApplicationListener<Tit
     }
 
     @Override
-    public void onApplicationEvent(TitleEvent event) {
+    public void onApplicationEvent(@NotNull TitleEvent event) {
         lock.lock();
         try {
             this.lastTitleEvent = event;

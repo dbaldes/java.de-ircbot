@@ -20,7 +20,7 @@ public class HelpCommandHandler implements CommandHandler {
     private static final Command CMD_HELP = new Command("help",
             "Usage: !help all commands; !help <command> send usage information for command");
 
-    private Map<String, Command> commandsByCommand;
+    private final Map<String, Command> commandsByCommand;
 
     @Autowired
     public HelpCommandHandler(List<CommandHandler> commandHandlers) {

@@ -45,7 +45,7 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
     private static final String API_URL_STOCK_QUOTE = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%s&apikey=%s";
     private static final String API_URL_FOREX = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=%s&to_currency=%s&apikey=%s";
 
-    private String apiKey;
+    private final String apiKey;
 
     public StockAlphavantageCommandHandler(@Value("alphavantage.apiKey") String apiKey) {
         this.apiKey = apiKey;

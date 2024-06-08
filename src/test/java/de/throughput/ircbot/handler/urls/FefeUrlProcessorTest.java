@@ -1,15 +1,13 @@
 package de.throughput.ircbot.handler.urls;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
 
-public class FefeUrlProcessorTest {
-
+class FefeUrlProcessorTest {
 
     private static final Set<String> FEFE_URLS = Set.of(
             "https://blog.fefe.de/?ts=b5258fc3");
@@ -19,7 +17,7 @@ public class FefeUrlProcessorTest {
             "https://blog.fefe.de/faq.html");
 
     @Test
-    public void testUrlPatterns() {
+    void testUrlPatterns() {
         FefeUrlProcessor processor = new FefeUrlProcessor();
         Pattern pattern = processor.getUrlPatterns()
                 .iterator()
@@ -27,13 +25,13 @@ public class FefeUrlProcessorTest {
         for (String url : FEFE_URLS) {
             Matcher matcher = pattern.matcher(url);
 
-            assertEquals(matcher.matches(), true);
-            assertEquals(matcher.group(1), "b5258fc3");
+            assertTrue(matcher.matches());
+            assertEquals("b5258fc3", matcher.group(1));
         }
     }
 
     @Test
-    public void testUrlPatternsNoMatch() {
+    void testUrlPatternsNoMatch() {
         FefeUrlProcessor processor = new FefeUrlProcessor();
 
         Pattern pattern = processor.getUrlPatterns()
@@ -41,7 +39,7 @@ public class FefeUrlProcessorTest {
                 .next();
         for (String url : NOT_FEFE_URLS) {
             Matcher matcher = pattern.matcher(url);
-            assertEquals(matcher.matches(), false);
+            assertFalse(matcher.matches());
         }
     }
 }

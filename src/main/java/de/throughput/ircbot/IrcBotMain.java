@@ -24,7 +24,7 @@ import java.time.Duration;
 @EnableScheduling
 public class IrcBotMain {
 
-    private static final String REALNAME = "Dr. Ashoka Fockit";
+    private static final String REALNAME = "Dr. Ashoka Mockit";
     private static final String VERSION = "0.9.0";
     private static final int DELAY_RECONNECT_MS = 5000;
 

@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
-public class YoutubeUrlProcessorTest {
+class YoutubeUrlProcessorTest {
 
     private static final Set<String> YOUTUBE_URLS = Set.of(
             "http://www.youtube.com/watch?v=0zM3nApSvMg&feature=feedrec_grec_index",
@@ -27,7 +27,7 @@ public class YoutubeUrlProcessorTest {
             "http://notyoutu.be/0zM3nApSvMg");
 
     @Test
-    public void testUrlPatternsMatch() {
+    void testUrlPatternsMatch() {
         YoutubeUrlProcessor processor = new YoutubeUrlProcessor(null, null);
 
         Pattern pattern = processor.getUrlPatterns()
@@ -41,7 +41,7 @@ public class YoutubeUrlProcessorTest {
     }
 
     @Test
-    public void testUrlPatternsNoMatch() {
+    void testUrlPatternsNoMatch() {
         YoutubeUrlProcessor processor = new YoutubeUrlProcessor(null, null);
 
         Pattern pattern = processor.getUrlPatterns()

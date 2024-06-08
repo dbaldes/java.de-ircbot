@@ -18,31 +18,35 @@ public class NeinDochMessageHandler implements MessageHandler {
         try {
             String message = event.getMessage()
                     .trim();
-            if (message.equals("nein!")) {
-                Thread.sleep(MESSAGE_DELAY);
-                event.getChannel()
-                        .send()
-                        .message("doch!");
-                return true;
-            } else if (message.equals("NEIN!")) {
-                Thread.sleep(MESSAGE_DELAY);
-                event.getChannel()
-                        .send()
-                        .message("DOCH!");
-                return true;
-            } else if (message.equals("Nein!")) {
-                Thread.sleep(MESSAGE_DELAY);
-                event.getChannel()
-                        .send()
-                        .message("Doch!");
-                return true;
+            switch (message) {
+                case "nein!": {
+                    Thread.sleep(MESSAGE_DELAY);
+                    event.getChannel()
+                            .send()
+                            .message("doch!");
+                    return true;
+                }
+                case "NEIN!": {
+                    Thread.sleep(MESSAGE_DELAY);
+                    event.getChannel()
+                            .send()
+                            .message("DOCH!");
+                    return true;
+                }
+                case "Nein!": {
+                    Thread.sleep(MESSAGE_DELAY);
+                    event.getChannel()
+                            .send()
+                            .message("Doch!");
+                    return true;
+                }
+                default: return false;
             }
-            return false;
         } catch (InterruptedException e) {
             Thread.currentThread()
                     .interrupt();
-            throw new RuntimeException(e);
         }
+        return false;
     }
 
     @Override

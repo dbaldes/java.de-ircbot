@@ -18,21 +18,21 @@ import de.throughput.ircbot.api.CommandHandler;
 @Component
 public class AviationInfoCommandHandler implements CommandHandler {
 
-    private static Command CMD_FLIGHT = new Command("flight",
+    private static final Command CMD_FLIGHT = new Command("flight",
             "Usage: !flight <flight number> - "
                     + "a flight number consists of the two-letter IATA "
                     + "or three-letter ICAO airline code and "
                     + "a one to four digits flight number.");
 
-    private static Command CMD_AIRCRAFT = new Command("aircraft",
+    private static final Command CMD_AIRCRAFT = new Command("aircraft",
             "Usage: !aircraft <registration> - "
                     + "that doesn't look like an aircraft registration number.");
 
-    private static Command CMD_AIRPORT = new Command("airport",
+    private static final Command CMD_AIRPORT = new Command("airport",
             "Usage: !airport <IATA or ICAO code> - "
                     + "an airport IATA code is three letters, an ICAO code four letters.");
 
-    private static Command CMD_AVHERALD = new Command("avherald",
+    private static final Command CMD_AVHERALD = new Command("avherald",
             "Usage: !avherald <search query>");
 
     @Override

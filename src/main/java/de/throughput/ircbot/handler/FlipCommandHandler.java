@@ -17,17 +17,17 @@ import de.throughput.ircbot.api.CommandHandler;
 @Component
 public class FlipCommandHandler implements CommandHandler {
 
-    private static String ALPHABET = "abcdefghijklmnorstvwxyz"
+    private static final String ALPHABET = "abcdefghijklmnorstvwxyz"
             + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             + "0123456789"
             + "?!.,(<[{'_\\&";
 
-    private static String ALPHABET_FLIPPED = "\u0250q\u0254p\u01dd\u025f\u0183\u0265\u1d09\u027e\u029e\u05df\u026fuo\u0279s\u0287\u028c\u028dx\u028ez"
+    private static final String ALPHABET_FLIPPED = "\u0250q\u0254p\u01dd\u025f\u0183\u0265\u1d09\u027e\u029e\u05df\u026fuo\u0279s\u0287\u028c\u028dx\u028ez"
             + "\u2200B\u0186D\u018e\u2132\u05e4HI\u017fK\u02e5WNO\u0500Q\u042fS\u2534\u2229\u039bMX\u2144Z"
             + "0\u01962\u01904\u03db9L86"
             + "\u00bf\u00a1\u02d9')>]},\u203e/\u214b";
 
-    private final static Map<Character, Character> REPLACEMENTS;
+    private static final Map<Character, Character> REPLACEMENTS;
 
     static {
         REPLACEMENTS = new HashMap<>();
