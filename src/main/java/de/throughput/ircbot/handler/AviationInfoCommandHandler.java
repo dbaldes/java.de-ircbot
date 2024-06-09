@@ -65,12 +65,10 @@ public class AviationInfoCommandHandler implements CommandHandler {
                     iataCode ->
                             command.respond(
                                     "https://flightaware.com/live/airport/" + urlEnc(iataCode)
-                                            + " - https://www.flightradar24.com/airport/" + urlEnc(iataCode)
-                                            + " - https://www.world-airport-codes.com/search/?s=" + urlEnc(iataCode)),
+                                            + " - https://www.flightradar24.com/airport/" + urlEnc(iataCode)),
                     icaoCode ->
                             command.respond(
-                                    "https://flightaware.com/live/airport/" + urlEnc(icaoCode)
-                                            + " - https://www.world-airport-codes.com/search/?s=" + urlEnc(icaoCode)),
+                                    "https://flightaware.com/live/airport/" + urlEnc(icaoCode)),
                     () -> usage(command));
             handled = true;
         } else if (command.getCommand()
