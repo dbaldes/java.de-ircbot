@@ -10,9 +10,9 @@ bed for trying out new technologies and APIs.
 
 The bot is implemented as [spring boot](https://spring.io/projects/spring-boot) application using Java 21 
 and [lombok](https://projectlombok.org/), and deployed on a vps as [docker](https://www.docker.com/) container. 
-Github actions are used to implement a CI/CD pipeline. Integration tests are run on [PostgreSQL](https://www.postgresql.org/)
-and [InspIRCd](https://www.inspircd.org/). The bot is deployed automatically when changes are 
-pushed to the master branch and the tests are successful.
+GitHub Actions were used to implement a CI/CD pipeline that runs integration tests on 
+[PostgreSQL](https://www.postgresql.org/) and [InspIRCd](https://www.inspircd.org/), and automatically deploys the bot to 
+production when changes are pushed to the master branch and the tests are successful.
 
 ## Features
 
@@ -138,7 +138,3 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
-
-- [pircbotx](https://github.com/pircbotx/pircbotx) - The IRC library used in this project.
-- The #java.de community for their support and ideas.
