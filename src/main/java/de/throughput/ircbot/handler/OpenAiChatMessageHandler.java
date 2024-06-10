@@ -33,6 +33,9 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Reponds to messages directed at the bot, using the OpenAI API.
+ */
 @Component
 public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler {
 
