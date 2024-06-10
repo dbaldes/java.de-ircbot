@@ -12,10 +12,10 @@ import org.pircbotx.hooks.events.MessageEvent;
 @AllArgsConstructor
 public class CommandEvent {
 
-    private MessageEvent event;
-    private Command command;
-    private String commandPrefix;
-    private Optional<String> argLine;
+    private final MessageEvent event;
+    private final Command command;
+    private final String commandPrefix;
+    private final Optional<String> argLine;
 
     public void respond(String answer) {
         event.respond(answer);

@@ -51,7 +51,8 @@ public class IrcBotMain {
      * Create the pircbotx configuration.
      */
     @Bean
-    Configuration botConfig(IrcBotConfig botConfig, IrcBotControlListener cmdListener, IrcBotConversationListener convListener) {
+    Configuration botConfig(IrcBotConfig botConfig, IrcBotControlListener cmdListener, IrcBotConversationListener convListener,
+            AdminCommandRunner adminCommandRunner) {
         validate(botConfig);
 
         Configuration.Builder config = new Configuration.Builder().setAutoNickChange(true)
@@ -61,6 +62,7 @@ public class IrcBotMain {
                 .setRealName(REALNAME)
                 .addListener(cmdListener)
                 .addListener(convListener)
+                .addListener(adminCommandRunner)
                 .addServer(botConfig.getServer(), botConfig.getPort())
                 .setName(botConfig.getNick())
                 .setLogin(botConfig.getNick())

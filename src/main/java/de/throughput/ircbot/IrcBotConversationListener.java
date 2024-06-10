@@ -1,5 +1,6 @@
 package de.throughput.ircbot;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,28 +32,27 @@ public class IrcBotConversationListener extends ListenerAdapter {
     private final List<MessageHandler> messageHandlers;
     private final UserRateLimiter rateLimiter;
 
+    private final AdminCommandRunner adminCommandRunner;
+
     @Autowired
     public IrcBotConversationListener(
             IrcBotConfig botConfig,
             UserRateLimiter rateLimiter,
+            AdminCommandRunner adminCommandRunner,
             List<CommandHandler> commandHandlers,
             List<MessageHandler> messageHandlers) {
         this.botConfig = botConfig;
         this.rateLimiter = rateLimiter;
+        this.adminCommandRunner = adminCommandRunner;
         commandHandlersByCommand = new LinkedHashMap<>();
-        commandHandlers.forEach(handler -> {
-            handler.getCommands()
-                    .forEach(command -> {
-                        commandHandlersByCommand.put(command.getCommand(), Pair.of(command, handler));
-                    });
-        });
+        commandHandlers.forEach(handler -> handler.getCommands()
+                .forEach(command -> commandHandlersByCommand.put(command.getCommand(), Pair.of(command, handler))));
         this.messageHandlers = messageHandlers;
     }
 
     @Override
     public void onMessage(MessageEvent event) throws Exception {
-        String nick = event.getUser()
-                .getNick();
+        String nick = event.getUser().getNick();
         if (nick.equals(event.getBot()
                 .getNick())) {
             return; // don't listen to ourselves
@@ -63,10 +63,8 @@ public class IrcBotConversationListener extends ListenerAdapter {
 
         boolean rateLimitExceeded = rateLimiter.limit(nick);
 
-        String channel = event.getChannel()
-                .getName();
-        String message = event.getMessage()
-                .trim();
+        String channel = event.getChannel().getName();
+        String message = event.getMessage().trim();
         Optional<String> commandPrefix = commandPrefix(message);
         if (commandPrefix.isPresent() && message.length() > 1 && isTalkChannel(channel)) {
 
@@ -82,13 +80,9 @@ public class IrcBotConversationListener extends ListenerAdapter {
 
             List<Pair<Command, CommandHandler>> matches = commandHandlersByCommand.entrySet()
                     .stream()
-                    .filter(entry -> entry.getKey()
-                            .startsWith(command))
+                    .filter(entry -> entry.getKey().startsWith(command))
                     .map(Entry::getValue)
-                    .sorted((a, b) -> a.getLeft()
-                            .getCommand()
-                            .compareTo(b.getLeft()
-                                    .getCommand()))
+                    .sorted(Comparator.comparing(a -> a.getLeft().getCommand()))
                     .toList();
 
             if (matches.size() == 1) {
@@ -96,9 +90,7 @@ public class IrcBotConversationListener extends ListenerAdapter {
             } else if (matches.size() > 1) {
                 // is there an exact match?
                 matches.stream()
-                        .filter(entry -> entry.getKey()
-                                .getCommand()
-                                .equals(command))
+                        .filter(entry -> entry.getKey().getCommand().equals(command))
                         .findFirst()
                         .ifPresentOrElse(
                                 match -> handleCommand(commandPrefix.get(), event, argLine, match),
@@ -131,14 +123,19 @@ public class IrcBotConversationListener extends ListenerAdapter {
     }
 
     private void handleCommand(String commandPrefix, MessageEvent event, String argLine, Pair<Command, CommandHandler> match) {
-        CommandEvent cmdEvent = new CommandEvent(event, match.getLeft(), commandPrefix, Optional.ofNullable(argLine));
-        match.getRight()
-                .onCommand(cmdEvent);
+        Command command = match.getLeft();
+        CommandEvent cmdEvent = new CommandEvent(event, command, commandPrefix, Optional.ofNullable(argLine));
+        CommandHandler handler = match.getRight();
+
+        if (command.isPrivileged()) {
+            adminCommandRunner.runPrivileged(event, () -> handler.onCommand(cmdEvent));
+        } else {
+            handler.onCommand(cmdEvent);
+        }
     }
 
     private boolean isTalkChannel(String channel) {
-        return botConfig.getTalkChannels()
-                .contains(channel);
+        return botConfig.getTalkChannels().contains(channel);
     }
 
 }

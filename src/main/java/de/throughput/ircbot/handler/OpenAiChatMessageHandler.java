@@ -39,7 +39,8 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
 
     public static final Command CMD_RESET_CONTEXT = new Command("aireset",
-            "aireset - deletes the current context for the channel and reloads the system prompt from the file system.");
+            "aireset - deletes the current context for the channel and reloads the system prompt from the file system."
+            , true);
 
     private static final String MODEL_NAME = "gpt-4o";
     private static final int MAX_CONTEXT_MESSAGES = 20;
