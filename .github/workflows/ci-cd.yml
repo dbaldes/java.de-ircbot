@@ -51,6 +51,12 @@ jobs:
     services:
       ircd:
         image: inspircd/inspircd-docker
+        options: >-
+          --health-cmd="/usr/bin/nc -z localhost 6667"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-start-period 5s
+          --health-retries 5
         ports:
           - "6667:6667"
       postgres:
