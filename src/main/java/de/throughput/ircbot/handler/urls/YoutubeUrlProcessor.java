@@ -49,7 +49,7 @@ public class YoutubeUrlProcessor implements UrlProcessor {
 
             List<Video> items = response.getItems();
 
-            if (items.size() > 0) {
+            if (!items.isEmpty()) {
                 Video video = response.getItems()
                         .get(0);
 

@@ -39,7 +39,7 @@ public class UrlParser {
     /**
      * Checks if the given string is a valid URL.
      *
-     * @param url string
+     * @param surl string
      * @return true if the URL can be parsed
      */
     private static boolean validUrl(String surl) {
