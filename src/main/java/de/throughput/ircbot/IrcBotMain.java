@@ -26,7 +26,7 @@ import java.time.Duration;
 public class IrcBotMain {
 
     private static final String REALNAME = "Dr. Ashoka Mockit";
-    private static final String VERSION = "0.9.0";
+    private static final String VERSION = "1.0 - of course.";
     private static final int DELAY_RECONNECT_MS = 5000;
 
     public static void main(String[] args) {
