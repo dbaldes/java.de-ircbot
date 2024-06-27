@@ -21,7 +21,7 @@ import com.theokanning.openai.completion.CompletionRequest;
 /**
  * Lagerfeld AI command handler.
  * <p>
- * !ailagerfeld <text> - responds with an AI-generated Lagerfeld quote.
+ * !lagerfeld <text> - responds with an AI-generated Lagerfeld quote.
  */
 @Component
 @RequiredArgsConstructor
