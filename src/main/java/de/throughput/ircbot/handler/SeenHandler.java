@@ -126,7 +126,7 @@ public class SeenHandler implements CommandHandler, MessageHandler {
                     .append("s")
                     .append(" ");
         }
-        if (sb.length() == 0) {
+        if (sb.isEmpty()) {
             sb.append("0s");
         } else {
             sb.deleteCharAt(sb.length() - 1);
