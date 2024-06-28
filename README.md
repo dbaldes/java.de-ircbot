@@ -130,6 +130,10 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Usage**: `!thaigold`
 - **Description**: Gets current Thai gold price information.
 
+### weather
+- **Usage** `!weather <location>`
+- **Description**: Gets current weather information for a given location.
+
 ### help
 - **Usage**: `!help <command>`
 - **Description**: Sends usage information for the specified command.
