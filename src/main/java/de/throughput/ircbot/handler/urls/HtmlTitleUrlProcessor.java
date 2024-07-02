@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.UnsupportedMimeTypeException;
+import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class HtmlTitleUrlProcessor {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public void process(String url, GenericMessageEvent event) {
+    public void process(String url, MessageEvent event) {
         try {
             URI uri = URI.create(url);
             String title = Jsoup.connect(url)
@@ -45,8 +46,8 @@ public class HtmlTitleUrlProcessor {
                     title = title.substring(0, 600) + "(...)";
                 }
 
-                String message = String.format("^ %s: '%s'", uri.getHost(), title);
-                event.respond(message);
+                String message = String.format("^ '%s'", title);
+                event.getChannel().send().message(message);
 
                 // intentionally sending the shortened title
                 eventPublisher.publishEvent(new TitleEvent(this, title));

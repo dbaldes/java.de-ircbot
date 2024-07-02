@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -35,11 +36,11 @@ public class YoutubeUrlProcessor implements UrlProcessor {
     }
 
     @Override
-    public void process(Matcher matcher, GenericMessageEvent event) {
+    public void process(Matcher matcher, MessageEvent event) {
         getYoutubeInfo(matcher.group(1), event);
     }
 
-    private void getYoutubeInfo(String id, GenericMessageEvent event) {
+    private void getYoutubeInfo(String id, MessageEvent event) {
         try {
             YouTube.Videos.List videosListByIdRequest = youtube.videos()
                     .list("snippet");
@@ -56,7 +57,7 @@ public class YoutubeUrlProcessor implements UrlProcessor {
                 String title = video.getSnippet()
                         .getTitle();
 
-                event.respond(String.format("^ YouTube: '%s'", title));
+                event.getChannel().send().message(String.format("^ YouTube: '%s'", title));
 
                 eventPublisher.publishEvent(new TitleEvent(this, title));
             }

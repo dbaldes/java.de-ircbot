@@ -3,6 +3,8 @@ package de.throughput.ircbot.handler.urls;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 
 /**
@@ -25,6 +27,6 @@ public interface UrlProcessor {
      * @param matcher matcher which matched one of the patterns.
      * @param event   matching message event
      */
-    void process(Matcher matcher, GenericMessageEvent event);
+    void process(Matcher matcher, MessageEvent event);
 
 }

@@ -8,6 +8,8 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.pircbotx.hooks.events.MessageEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +30,11 @@ public class FefeUrlProcessor implements UrlProcessor {
     }
 
     @Override
-    public void process(Matcher matcher, GenericMessageEvent event) {
+    public void process(Matcher matcher, MessageEvent event) {
         processFefeUrl(event, matcher.group(0));
     }
 
-    private void processFefeUrl(GenericMessageEvent event, String url) {
+    private void processFefeUrl(MessageEvent event, String url) {
         HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                 .GET()
                 .build();
@@ -43,7 +45,7 @@ public class FefeUrlProcessor implements UrlProcessor {
                 });
     }
 
-    private void processResponse(GenericMessageEvent event, HttpResponse<String> httpResponse) {
+    private void processResponse(MessageEvent event, HttpResponse<String> httpResponse) {
         if (httpResponse.statusCode() == 200) {
             Matcher matcher = FEFE_TITLE_PATTERN.matcher(httpResponse.body());
             if (matcher.find()) {
@@ -52,7 +54,7 @@ public class FefeUrlProcessor implements UrlProcessor {
                 if (title.length() > 600) {
                     title = title.substring(0, 600) + "(...)";
                 }
-                event.respond(String.format("^ Fefe's Blog: '%s'", title));
+                event.getChannel().send().message(String.format("^ Fefe's Blog: '%s'", title));
             }
         } else {
             event.respond("" + httpResponse.statusCode());
