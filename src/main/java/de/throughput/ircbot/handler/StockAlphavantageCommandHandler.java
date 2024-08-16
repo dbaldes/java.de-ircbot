@@ -20,6 +20,7 @@ import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Currency;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +45,9 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
 
     private static final String API_URL_STOCK_QUOTE = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%s&apikey=%s";
     private static final String API_URL_FOREX = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=%s&to_currency=%s&apikey=%s";
+
+    // as suggested by pavonia
+    //private static final List<String> TOP_TEN_SYMBOLS = List.of("AAPL", "MSFT", "NVDA", "GOOG", "AMZN", "META", "TSM", "LLY", "TSLA", "JPM");
 
     private final String apiKey;
 
@@ -100,8 +104,8 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
                            StockQuote quote = entry.getValue();
 
                            String priceColor = quote.change.signum() >= 0 ? Colors.GREEN : Colors.RED;
-                           return String.format("%s: %s%s (%+.2f)%s", quote.symbol, priceColor, renderPrice(quote.price, DEFAULT_CURRENCY),
-                                   quote.change, Colors.NORMAL);
+                           return String.format("%s: %s%s (%+.2f%%)%s", quote.symbol, priceColor, renderPrice(quote.price, DEFAULT_CURRENCY),
+                                   quote.changePercent, Colors.NORMAL);
                        })
                        .collect(Collectors.joining(" "))
                + " (\u0394 previous close)";
