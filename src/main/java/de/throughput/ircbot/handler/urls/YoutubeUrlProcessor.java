@@ -25,7 +25,7 @@ import de.throughput.ircbot.handler.TitleEvent;
 public class YoutubeUrlProcessor implements UrlProcessor {
 
     private static final Pattern YOUTUBE_URL = Pattern.compile(
-            "https?://(?:youtu.be/|(?:www.youtube.com|youtube.com)/(?:v/|u/\\w/|embed/|watch\\?v=))([^#\\&\\?]*).*");
+            "https?://(?:youtu.be/|(?:www.youtube.com|youtube.com)/(?:v/|u/\\w/|embed/|shorts/|watch\\?v=))([^#\\&\\?]*).*");
 
     private final YouTube youtube;
     private final ApplicationEventPublisher eventPublisher;

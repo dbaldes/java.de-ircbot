@@ -18,7 +18,8 @@ class YoutubeUrlProcessorTest {
             "http://www.youtube.com/embed/0zM3nApSvMg?rel=0",
             "http://www.youtube.com/watch?v=0zM3nApSvMg",
             "http://youtu.be/0zM3nApSvMg",
-            "https://youtube.com/watch?v=gTNWm-cKNqI");
+            "https://youtube.com/watch?v=gTNWm-cKNqI",
+            "https://youtube.com/shorts/Q19BoZDiVqw");
 
     private static final Set<String> NOT_YOUTUBE_URLS = Set.of(
             "http://www.gootube.com/watch?v=0zM3nApSvMg&feature=feedrec_grec_index",
@@ -35,8 +36,8 @@ class YoutubeUrlProcessorTest {
                 .next();
         for (String url : YOUTUBE_URLS) {
             Matcher matcher = pattern.matcher(url);
-            assertThat(matcher.matches(), is(true));
-            assertThat(matcher.group(1), anyOf(is("0zM3nApSvMg"), is("gTNWm-cKNqI")));
+            assertThat("%s matches".formatted(url), matcher.matches(), is(true));
+            assertThat(matcher.group(1), anyOf(is("0zM3nApSvMg"), is("gTNWm-cKNqI"), is("Q19BoZDiVqw")));
         }
     }
 
