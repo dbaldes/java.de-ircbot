@@ -56,7 +56,7 @@ class IrcBotIT {
             bot.sendIRC().message(CHANNEL, "!help");
             assertThat(listener.waitForMessage()).isTrue();
 
-            assertThat(listener.getLastMessage()).contains("seen", "karma", "stock", "crypto");
+            assertThat(listener.getLastMessage()).contains("seen", "stock", "crypto");
         }
     }
 
@@ -98,29 +98,6 @@ class IrcBotIT {
         synchronized (listener) {
             listener.expectMessage(TESTBOT_NICK + ": https://flightaware.com/live/flight/TG970 - https://www.flightradar24.com/data/flights/TG970");
             bot.sendIRC().message(CHANNEL, "!flight TG970");
-            assertThat(listener.waitForMessage()).isTrue();
-        }
-    }
-
-    @Test
-    void testKarma() throws Exception {
-        synchronized (listener) {
-            listener.expectMessage(TESTBOT_NICK + ": Vader has neutral karma.");
-            bot.sendIRC().message(CHANNEL, "!karma Vader");
-            assertThat(listener.waitForMessage()).isTrue();
-
-            bot.sendIRC().message(CHANNEL, "++Vader");
-            bot.sendIRC().message(CHANNEL, "Vader++");
-            listener.expectMessage(TESTBOT_NICK + ": Vader has a karma of 2.");
-            assertThat(listener.waitForMessage()).isTrue();
-
-            bot.sendIRC().message(CHANNEL, "--Vader");
-            bot.sendIRC().message(CHANNEL, "Vader--");
-            listener.expectMessage(TESTBOT_NICK + ": Vader has neutral karma.");
-            assertThat(listener.waitForMessage()).isTrue();
-
-            bot.sendIRC().message(CHANNEL, "--Vader");
-            listener.expectMessage(TESTBOT_NICK + ": Vader has a karma of -1.");
             assertThat(listener.waitForMessage()).isTrue();
         }
     }

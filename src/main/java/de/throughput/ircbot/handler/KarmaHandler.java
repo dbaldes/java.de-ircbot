@@ -22,7 +22,7 @@ import de.throughput.ircbot.api.MessageHandler;
  * <p>
  * The current karma level of something can be queried by uttering "!karma something".
  */
-@Component
+//@Component disabled
 public class KarmaHandler implements CommandHandler, MessageHandler {
 
     private static final Command CMD_KARMA = new Command("karma", "Usage: !karma <nick or thing> - shows the recorded karma for <nick or thing>");
