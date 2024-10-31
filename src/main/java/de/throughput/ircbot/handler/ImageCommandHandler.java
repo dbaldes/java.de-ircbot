@@ -121,6 +121,26 @@ public class ImageCommandHandler implements CommandHandler {
             } catch (Exception e) {
                 command.respond("Error processing image response: " + e.getMessage());
             }
+        } else if (response.statusCode() >= 400 && response.statusCode() < 500) {
+            // Try to parse the error response
+            try {
+                Gson gson = new Gson();
+                Type type = new TypeToken<Map<String, Object>>() {}.getType();
+                Map<String, Object> responseBody = gson.fromJson(response.body(), type);
+
+                Map<String, Object> error = (Map<String, Object>) responseBody.get("error");
+                if (error != null) {
+                    String errorType = (String) error.get("type");
+                    String errorMessage = (String) error.get("message");
+                    command.respond(errorType + ": " + errorMessage);
+                } else {
+                    // If the error object is missing, respond with the status code
+                    command.respond("Error generating image: " + response.statusCode());
+                }
+            } catch (Exception e) {
+                // Failed to parse the error response
+                command.respond("Error generating image: " + response.statusCode());
+            }
         } else {
             command.respond("Error generating image: " + response.body());
         }
