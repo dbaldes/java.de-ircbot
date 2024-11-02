@@ -103,7 +103,7 @@ public class ImageCommandHandler implements CommandHandler {
                 byte[] imageBytes = Base64.getDecoder().decode(b64Json);
 
                 // Add the prompt as description
-                imageBytes = ExifTool.addDescription(imageBytes, prompt);
+                imageBytes = XmpTool.addDescription(imageBytes, prompt);
 
                 // Generate a unique file name
                 String fileName = "i" + System.currentTimeMillis() + ".jpg";
