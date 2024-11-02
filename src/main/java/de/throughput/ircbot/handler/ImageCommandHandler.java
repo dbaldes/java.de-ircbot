@@ -20,7 +20,6 @@ import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Command handler for generating images using the Together.ai API.
@@ -103,8 +102,11 @@ public class ImageCommandHandler implements CommandHandler {
                 // Decode the image
                 byte[] imageBytes = Base64.getDecoder().decode(b64Json);
 
+                // Add the prompt as description
+                imageBytes = ExifTool.addDescription(imageBytes, prompt);
+
                 // Generate a unique file name
-                String fileName = "image_" + System.currentTimeMillis() + ".jpg";
+                String fileName = "i" + System.currentTimeMillis() + ".jpg";
                 File imageFile = Paths.get(imageSaveDirectory, fileName).toFile();
 
                 // Save the image to disk
