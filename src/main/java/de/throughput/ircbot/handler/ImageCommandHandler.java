@@ -27,17 +27,32 @@ import java.util.Set;
 @Component
 public class ImageCommandHandler implements CommandHandler {
 
-    private static final Command CMD_IMAGE = new Command("image", "image <prompt> - generate an image from the prompt");
+    private static final Command CMD_IMAGE = new Command("image", "image <prompt> - generate an image from the given prompt");
+    private static final Command CMD_AIIMAGE = new Command("aiimage",
+            "aiimage <prompt> - generate an image prompt from the given prompt using an LLM, then generate an image from the generated prompt");
     private static final String API_URL = "https://api.together.xyz/v1/images/generations";
 
+    private static final String AI_IMAGE_PROMPT_TEMPLATE = """
+            Transform the following text into a highly detailed and vivid image description suitable for an image generation model.
+            The description shall be in English language and less than 1000 characters.
+            Expand on the visual elements by incorporating rich descriptive language, specifying aspects like colors, lighting, textures,
+            atmosphere, and artistic style to create a captivating and intricate image.
+            The goal is to generate a prompt that will result in a detailed picture.
+            
+            Text: "%s"
+            """;
+
+    private final SimpleAiService simpleAiService;
     private final String apiKey;
     private final String imageSaveDirectory;
     private final String imageUrlPrefix;
 
     public ImageCommandHandler(
+            SimpleAiService simpleAiService,
             @Value("${together.apiKey}") String apiKey,
             @Value("${image.saveDirectory}") String imageSaveDirectory,
             @Value("${image.urlPrefix}") String imageUrlPrefix) {
+        this.simpleAiService = simpleAiService;
         this.apiKey = apiKey;
         this.imageSaveDirectory = imageSaveDirectory;
         this.imageUrlPrefix = imageUrlPrefix;
@@ -45,7 +60,7 @@ public class ImageCommandHandler implements CommandHandler {
 
     @Override
     public Set<Command> getCommands() {
-        return Set.of(CMD_IMAGE);
+        return Set.of(CMD_IMAGE, CMD_AIIMAGE);
     }
 
     @Override
@@ -57,6 +72,12 @@ public class ImageCommandHandler implements CommandHandler {
     }
 
     private void generateImage(CommandEvent command, String prompt) {
+        // If requested, generate an image prompt using LLM
+        if (CMD_AIIMAGE.equals(command.getCommand())) {
+            String aiPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt);
+            prompt = simpleAiService.query(aiPrompt);
+        }
+
         // Build the JSON request body
         Map<String, Object> requestBody = Map.of(
                 "model", "black-forest-labs/FLUX.1-schnell",
@@ -78,9 +99,11 @@ public class ImageCommandHandler implements CommandHandler {
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
+        final String fPrompt = prompt;
+
         HttpClient.newHttpClient()
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> processResponse(command, response, prompt))
+                .thenAccept(response -> processResponse(command, response, fPrompt))
                 .exceptionally(e -> {
                     command.respond("Error generating image: " + e.getMessage());
                     return null;
