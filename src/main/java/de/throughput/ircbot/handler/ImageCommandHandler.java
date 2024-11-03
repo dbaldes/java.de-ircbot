@@ -33,11 +33,12 @@ public class ImageCommandHandler implements CommandHandler {
     private static final String API_URL = "https://api.together.xyz/v1/images/generations";
 
     private static final String AI_IMAGE_PROMPT_TEMPLATE = """
-            Transform the following text into a highly detailed and vivid image description suitable for an image generation model.
-            The description shall be in English language and less than 1000 characters.
+            Transform the following text into a highly detailed and vivid image description suitable for the Flux image generation model.
+            The description shall be in English language, and less than 1000 characters long.
             Expand on the visual elements by incorporating rich descriptive language, specifying aspects like colors, lighting, textures,
             atmosphere, and artistic style to create a captivating and intricate image.
-            The goal is to generate a prompt that will result in a detailed picture.
+            The goal is to generate a prompt that will result in a detailed picture that captures the essence and mood of the given text as
+            precise as possible.
             
             Text: "%s"
             """;
