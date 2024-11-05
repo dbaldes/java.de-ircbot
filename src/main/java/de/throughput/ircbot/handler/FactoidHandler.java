@@ -34,7 +34,7 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
 
     private static final Command CMD_FORGET = new Command("forget", "Usage: !forget <key> - forgets a fact");
 
-    private static final Pattern PATTERN_FACTOID_DEFINITION = Pattern.compile("^\\s*(.*{1,254}\\S)\\s+(is also|is|are also|are)\\s+(.*{1,}\\S)\\s*$");
+    private static final Pattern PATTERN_FACTOID_DEFINITION = Pattern.compile("^\\s*(\\S{1,254}(?<![:,;.?]))\\s+(is also|is|are also|are)\\s+(.*{1,}\\S)\\s*$");
 
     private final JdbcTemplate jdbc;
     private final Set<String> factoidChannels;
@@ -75,7 +75,7 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
         }
 
         String key = keyTrim(event.getMessage());
-        if (key.length() <= MAX_KEY_LENGTH) {
+        if (key.length() <= MAX_KEY_LENGTH && !key.contains(" ")) {
             var factsByVerb = loadFactoidsByVerb(key);
             if (!factsByVerb.isEmpty()) {
                 String response = factsByVerb.entrySet()
@@ -91,7 +91,7 @@ public class FactoidHandler implements CommandHandler, MessageHandler {
 
     private String keyTrim(String message) {
         return message.strip()
-                .replaceAll("\\s*[\\,\\.\\?\\!]+$", "")
+                .replaceAll("\\s*[,;.!?]+$", "")
                 .toLowerCase(Locale.ROOT);
     }
 
