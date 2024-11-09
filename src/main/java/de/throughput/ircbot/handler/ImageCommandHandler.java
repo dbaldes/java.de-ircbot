@@ -74,9 +74,10 @@ public class ImageCommandHandler implements CommandHandler {
 
     private void generateImage(CommandEvent command, String prompt) {
         // If requested, generate an image prompt using LLM
+        String imagePrompt = prompt;
         if (CMD_AIIMAGE.equals(command.getCommand())) {
-            String aiPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt);
-            prompt = simpleAiService.query(aiPrompt);
+            String llmPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt);
+            imagePrompt = simpleAiService.query(llmPrompt);
         }
 
         // Build the JSON request body
@@ -100,18 +101,19 @@ public class ImageCommandHandler implements CommandHandler {
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
-        final String fPrompt = prompt;
+        final String fImagePrompt = imagePrompt;
+        final String fOriginalPrompt = prompt;
 
         HttpClient.newHttpClient()
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> processResponse(command, response, fPrompt))
+                .thenAccept(response -> processResponse(command, response, fImagePrompt, fOriginalPrompt))
                 .exceptionally(e -> {
                     command.respond("Error generating image: " + e.getMessage());
                     return null;
                 });
     }
 
-    private void processResponse(CommandEvent command, HttpResponse<String> response, String prompt) {
+    private void processResponse(CommandEvent command, HttpResponse<String> response, String imagePrompt, String originalPrompt) {
         if (response.statusCode() == 200) {
             try {
                 // Parse the response
@@ -127,7 +129,7 @@ public class ImageCommandHandler implements CommandHandler {
                 byte[] imageBytes = Base64.getDecoder().decode(b64Json);
 
                 // Add the prompt as description
-                imageBytes = XmpTool.addDescription(imageBytes, prompt);
+                imageBytes = XmpTool.addPrompt(imageBytes, imagePrompt, originalPrompt);
 
                 // Generate a unique file name
                 String fileName = "i" + System.currentTimeMillis() + ".jpg";

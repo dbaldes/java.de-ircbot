@@ -14,14 +14,17 @@ import java.nio.charset.StandardCharsets;
 public class XmpTool {
 
     /**
-     * Adds a description to the JPEG image using an XMP tag.
+     * Adds a prompt and original prompt to the JPEG image using an XMP tag.
      */
-    public static byte[] addDescription(byte[] imageBytes, String description) throws IOException {
+    public static byte[] addPrompt(byte[] imageBytes, String imagePrompt, String originalPrompt) throws IOException {
         try {
             // Create XMP metadata and add Dublin Core schema
             XMPMetadata xmpMetadata = XMPMetadata.createXMPMetadata();
             DublinCoreSchema dcSchema = xmpMetadata.createAndAddDublinCoreSchema();
-            dcSchema.setDescription(description);  // Set the description field
+            dcSchema.setDescription(imagePrompt);  // Set the prompt field
+            if (originalPrompt != null && !imagePrompt.equals(originalPrompt)) {
+                dcSchema.setSource(originalPrompt);
+            }
 
             // Serialize the XMP metadata to a byte array
             ByteArrayOutputStream xmpOutputStream = new ByteArrayOutputStream();
