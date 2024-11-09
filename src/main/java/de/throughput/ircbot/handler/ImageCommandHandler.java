@@ -132,7 +132,8 @@ public class ImageCommandHandler implements CommandHandler {
                 imageBytes = XmpTool.addPrompt(imageBytes, imagePrompt, originalPrompt);
 
                 // Generate a unique file name
-                String fileName = "i" + System.currentTimeMillis() + ".jpg";
+                long imageId = System.currentTimeMillis();
+                String fileName = "i" + imageId + ".jpg";
                 File imageFile = Paths.get(imageSaveDirectory, fileName).toFile();
 
                 // Save the image to disk
@@ -140,8 +141,8 @@ public class ImageCommandHandler implements CommandHandler {
                     os.write(imageBytes);
                 }
 
-                // Construct the image URL
-                String imageUrl = imageUrlPrefix + fileName;
+                // Construct the image URL (link to gallery)
+                String imageUrl = imageUrlPrefix + imageId;
 
                 // Respond with the image URL
                 command.respond("Image generated: " + imageUrl);
