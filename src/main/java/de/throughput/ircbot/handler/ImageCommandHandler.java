@@ -42,6 +42,7 @@ public class ImageCommandHandler implements CommandHandler {
             
             Text: "%s"
             """;
+    public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell-Free";
 
     private final SimpleAiService simpleAiService;
     private final String apiKey;
@@ -82,7 +83,7 @@ public class ImageCommandHandler implements CommandHandler {
 
         // Build the JSON request body
         Map<String, Object> requestBody = Map.of(
-                "model", "black-forest-labs/FLUX.1-schnell",
+                "model", MODEL_NAME,
                 "prompt", prompt,
                 "width", 1024,
                 "height", 768,
