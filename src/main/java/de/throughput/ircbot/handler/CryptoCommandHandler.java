@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.List;
@@ -191,12 +192,20 @@ public class CryptoCommandHandler implements CommandHandler {
             precision = 4;
         }
 
+        // Create a NumberFormat instance with grouping
+        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
+        formatter.setGroupingUsed(true);
+        formatter.setMinimumFractionDigits(precision);
+        formatter.setMaximumFractionDigits(precision);
+
+        String formattedTotal = formatter.format(total);
 
         if (currencySymbol.endsWith("$")) {
-            return String.format("%s%." + precision + "f", currencySymbol, total);
+            return currencySymbol + formattedTotal;
         }
-        return String.format("%." + precision + "f%s", total, currencySymbol);
+        return formattedTotal + currencySymbol;
     }
+
 
     @Getter
     @Setter
