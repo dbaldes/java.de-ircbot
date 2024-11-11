@@ -319,7 +319,7 @@ public class CryptoCommandHandler implements CommandHandler {
         @SerializedName("percent_change_7d")
         private BigDecimal percentChange7d;
         @SerializedName("market_cap")
-        private BigDecimal marktetCap;
+        private BigDecimal marketCap;
         @SerializedName("market_cap_dominance")
         private BigDecimal marketCapDominance;
     }
