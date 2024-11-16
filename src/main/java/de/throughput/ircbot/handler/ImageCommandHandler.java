@@ -67,7 +67,7 @@ public class ImageCommandHandler implements CommandHandler {
     public boolean onCommand(CommandEvent command) {
         command.getArgLine().ifPresentOrElse(
                 prompt -> generateImage(command, prompt),
-                () -> command.respond(CMD_IMAGE.getUsage()));
+                () -> command.respond(command.getCommand().getUsage()));
         return true;
     }
 
