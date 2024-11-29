@@ -33,11 +33,11 @@ public class ImageCommandHandler implements CommandHandler {
     private static final String API_URL = "https://api.together.xyz/v1/images/generations";
 
     private static final String AI_IMAGE_PROMPT_TEMPLATE = """
-            Based on this input: "%s", create a (preferably short) title, and a prompt for the image generation model FLUX.1 [schnell]
+            Based on this input: "%s", create a prompt for the image generation model FLUX.1 [schnell]
             that includes subject, material i.e. medium or rendering style, artistic style, artist influence, details
             such as sharpness, color, lighting and additional elements in under 500 characters and in concise, natural,
             descriptive language, not as a list of those properties. The prompt shall not repeat the input, and it shall not
-            describe feelings that are invoked or anything but a specific description of the image. Reply with <title>: <prompt>.
+            describe feelings that are invoked or anything but a specific description of the image. Reply with just the prompt.
             """;
 
     private static final String AI_IMAGE_TITLE_TEMPLATE = """
@@ -81,18 +81,12 @@ public class ImageCommandHandler implements CommandHandler {
         // If requested, generate an image prompt using LLM
         if (CMD_AIIMAGE.equals(command.getCommand())) {
             String llmPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt);
-            String response = simpleAiService.query(llmPrompt);
-            // response should be title: prompt
-            if (response.contains(": ")) {
-                String[] splitResponse = response.split(": ", 2);
-                title = splitResponse[0];
-                imagePrompt = splitResponse[1];
-            } else {
-                imagePrompt = response;
-            }
+            imagePrompt = simpleAiService.query(llmPrompt);
+            String titlePrompt = AI_IMAGE_TITLE_TEMPLATE.replace("\n", " ").formatted(prompt + ": " + imagePrompt);
+            title = simpleAiService.query(titlePrompt);
         } else {
-            String llmPrompt = AI_IMAGE_TITLE_TEMPLATE.replace("\n", " ").formatted(prompt);
-            title = simpleAiService.query(llmPrompt);
+            String titlePrompt = AI_IMAGE_TITLE_TEMPLATE.replace("\n", " ").formatted(prompt);
+            title = simpleAiService.query(titlePrompt);
         }
         if (title != null) {
             title = title.replaceAll("^\"|\"$", "");
@@ -164,7 +158,8 @@ public class ImageCommandHandler implements CommandHandler {
                 String imageUrl = imageUrlPrefix + imageId;
 
                 // Respond with the image URL
-                command.respond("Image generated: " + imageUrl);
+                String message = imageTitle != null ? imageTitle : "Image generated";
+                command.respond(message + ": " + imageUrl);
 
             } catch (Exception e) {
                 command.respond("Error processing image response: " + e.getMessage());
