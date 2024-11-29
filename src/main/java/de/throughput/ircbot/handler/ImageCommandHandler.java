@@ -33,11 +33,15 @@ public class ImageCommandHandler implements CommandHandler {
     private static final String API_URL = "https://api.together.xyz/v1/images/generations";
 
     private static final String AI_IMAGE_PROMPT_TEMPLATE = """
-            Based on this input: "%s", create a prompt for the image generation model FLUX.1 [schnell]
+            Based on this input: "%s", create a (preferably short) title, and a prompt for the image generation model FLUX.1 [schnell]
             that includes subject, material i.e. medium or rendering style, artistic style, artist influence, details
             such as sharpness, color, lighting and additional elements in under 500 characters and in concise, natural,
             descriptive language, not as a list of those properties. The prompt shall not repeat the input, and it shall not
-            describe feelings that are invoked or anything but a specific description of the image.
+            describe feelings that are invoked or anything but a specific description of the image. Reply with <title>: <prompt>.
+            """;
+
+    private static final String AI_IMAGE_TITLE_TEMPLATE = """
+            Based on this prompt: "%s" for an image generation model, create a (preferably short) title for the image. Reply with just the title.
             """;
 
     public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell-Free";
@@ -72,11 +76,26 @@ public class ImageCommandHandler implements CommandHandler {
     }
 
     private void generateImage(CommandEvent command, String prompt) {
-        // If requested, generate an image prompt using LLM
         String imagePrompt = prompt;
+        String title = null;
+        // If requested, generate an image prompt using LLM
         if (CMD_AIIMAGE.equals(command.getCommand())) {
             String llmPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt);
-            imagePrompt = simpleAiService.query(llmPrompt);
+            String response = simpleAiService.query(llmPrompt);
+            // response should be title: prompt
+            if (response.contains(": ")) {
+                String[] splitResponse = response.split(": ", 2);
+                title = splitResponse[0];
+                imagePrompt = splitResponse[1];
+            } else {
+                imagePrompt = response;
+            }
+        } else {
+            String llmPrompt = AI_IMAGE_TITLE_TEMPLATE.replace("\n", " ").formatted(prompt);
+            title = simpleAiService.query(llmPrompt);
+        }
+        if (title != null) {
+            title = title.replaceAll("^\"|\"$", "");
         }
 
         // Build the JSON request body
@@ -101,18 +120,19 @@ public class ImageCommandHandler implements CommandHandler {
                 .build();
 
         final String fImagePrompt = imagePrompt;
+        final String fImageTitle = title;
         final String fOriginalPrompt = prompt;
 
         HttpClient.newHttpClient()
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> processResponse(command, response, fImagePrompt, fOriginalPrompt))
+                .thenAccept(response -> processResponse(command, response, fImagePrompt, fImageTitle, fOriginalPrompt))
                 .exceptionally(e -> {
                     command.respond("Error generating image: " + e.getMessage());
                     return null;
                 });
     }
 
-    private void processResponse(CommandEvent command, HttpResponse<String> response, String imagePrompt, String originalPrompt) {
+    private void processResponse(CommandEvent command, HttpResponse<String> response, String imagePrompt, String imageTitle, String originalPrompt) {
         if (response.statusCode() == 200) {
             try {
                 // Parse the response
@@ -128,7 +148,7 @@ public class ImageCommandHandler implements CommandHandler {
                 byte[] imageBytes = Base64.getDecoder().decode(b64Json);
 
                 // Add the prompt as description
-                imageBytes = XmpTool.addPrompt(imageBytes, imagePrompt, originalPrompt);
+                imageBytes = XmpTool.addMetadata(imageBytes, imageTitle, imagePrompt, originalPrompt);
 
                 // Generate a unique file name
                 long imageId = System.currentTimeMillis();

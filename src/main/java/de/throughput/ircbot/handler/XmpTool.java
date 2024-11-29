@@ -16,11 +16,14 @@ public class XmpTool {
     /**
      * Adds a prompt and original prompt to the JPEG image using an XMP tag.
      */
-    public static byte[] addPrompt(byte[] imageBytes, String imagePrompt, String originalPrompt) throws IOException {
+    public static byte[] addMetadata(byte[] imageBytes, String imageTitle, String imagePrompt, String originalPrompt) throws IOException {
         try {
             // Create XMP metadata and add Dublin Core schema
             XMPMetadata xmpMetadata = XMPMetadata.createXMPMetadata();
             DublinCoreSchema dcSchema = xmpMetadata.createAndAddDublinCoreSchema();
+            if (imageTitle != null) {
+                dcSchema.setTitle(imageTitle);
+            }
             dcSchema.setDescription(imagePrompt);  // Set the prompt field
             if (originalPrompt != null && !imagePrompt.equals(originalPrompt)) {
                 dcSchema.setSource(originalPrompt);
