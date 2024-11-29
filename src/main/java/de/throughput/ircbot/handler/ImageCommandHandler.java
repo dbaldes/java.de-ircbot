@@ -41,7 +41,8 @@ public class ImageCommandHandler implements CommandHandler {
             """;
 
     private static final String AI_IMAGE_TITLE_TEMPLATE = """
-            Based on this prompt: "%s" for an image generation model, create a (preferably short) title for the image. Reply with just the title.
+            Based on the following prompt for an image generation model, create a (preferably short) title for the image. Reply with just the title.
+            Prompt: "%s"
             """;
 
     public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell-Free";
