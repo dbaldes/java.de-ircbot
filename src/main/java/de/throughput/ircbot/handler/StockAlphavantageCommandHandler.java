@@ -41,10 +41,8 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
     private static final String DEFAULT_CURRENCY = "USD";
 
     private static final Command CMD_STOCK = new Command("stock", "stock <symbols> - get price information on stock symbols. example: !stock AMD");
-    private static final Command CMD_FX = new Command("fx", "fx <symbols> - get currency exchange rates. example: !fx USDEUR");
 
     private static final String API_URL_STOCK_QUOTE = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%s&apikey=%s";
-    private static final String API_URL_FOREX = "https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=%s&to_currency=%s&apikey=%s";
 
     private final String apiKey;
 
@@ -54,7 +52,7 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
 
     @Override
     public Set<Command> getCommands() {
-        return Set.of(CMD_STOCK, CMD_FX);
+        return Set.of(CMD_STOCK);
     }
 
     @Override
@@ -76,21 +74,7 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
     private void getPriceInfo(CommandEvent command, String[] symbols) {
         if (CMD_STOCK.equals(command.getCommand())) {
             command.respond(toStockMessage(getStockQuotes(symbols)));
-        } else if (CMD_FX.equals(command.getCommand())) {
-            command.respond(toFxMessage(getFxQuotes(symbols)));
         }
-    }
-
-    private String toFxMessage(Map<String, FxQuote> result) {
-        return result.entrySet()
-                .stream()
-                .sorted(comparingByKey())
-                .map(entry -> {
-                    FxQuote fxQuote = entry.getValue();
-
-                    return String.format("%s/%s: %.4f", fxQuote.fromCurrency, fxQuote.toCurrency, fxQuote.exchangeRate);
-                })
-                .collect(Collectors.joining(" "));
     }
 
     private String toStockMessage(Map<String, StockQuote> result) {
@@ -162,41 +146,6 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
                 new BigDecimal(globalQuote.get("05. price")),
                 new BigDecimal(globalQuote.get("09. change")),
                 new BigDecimal(globalQuote.get("10. change percent").replace("%", "")));
-    }
-
-    private Map<String, FxQuote> getFxQuotes(String[] symbols) {
-        return Arrays.stream(symbols)
-                .map(this::getFxQuoteKey)
-                .map(currencyPair -> getFxQuote(currencyPair.getLeft(), currencyPair.getRight()))
-                .map(CompletableFuture::join)
-                .collect(Collectors.toMap(fxQuote -> fxQuote.fromCurrency + "/" + fxQuote.toCurrency, Function.identity()));
-    }
-
-    private Pair<String, String> getFxQuoteKey(String symbol) {
-        return ImmutablePair.of(symbol.substring(0, 3), symbol.substring(3));
-    }
-
-    private CompletableFuture<FxQuote> getFxQuote(String fromCurrency, String toCurrency) {
-        URI uri = URI.create(String.format(API_URL_FOREX, fromCurrency, toCurrency, apiKey));
-
-        HttpRequest request = HttpRequest.newBuilder(uri)
-                .header("Accept", "application/json")
-                .GET()
-                .build();
-
-        return HttpClient.newHttpClient()
-                .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(this::processFxQuoteResponse);
-    }
-
-    private FxQuote processFxQuoteResponse(HttpResponse<String> httpResponse) {
-        Map<String, String> fxQuote = (Map<String, String>) parseAsMap(httpResponse).get("Realtime Currency Exchange Rate");
-        return new FxQuote(
-                fxQuote.get("1. From_Currency Code"),
-                fxQuote.get("2. From_Currency Name"),
-                fxQuote.get("3. To_Currency Code"),
-                fxQuote.get("4. To_Currency Name"),
-                new BigDecimal(fxQuote.get("5. Exchange Rate")));
     }
 
     private static Map<String, Object> parseAsMap(HttpResponse<String> httpResponse) {

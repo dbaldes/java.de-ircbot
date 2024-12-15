@@ -116,7 +116,7 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Description**: Gets price information on stock symbols.
 
 ### fx
-- **Usage**: `!fx <symbols>`
+- **Usage**: `!fx <symbols> [YYYY-MM-DD]`
 - **Description**: Gets currency exchange rates.
 
 ### thaigold
