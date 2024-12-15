@@ -119,10 +119,6 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Usage**: `!fx <symbols> [YYYY-MM-DD]`
 - **Description**: Gets currency exchange rates.
 
-### thaigold
-- **Usage**: `!thaigold`
-- **Description**: Gets current Thai gold price information.
-
 ### weather
 - **Usage** `!weather <location>`
 - **Description**: Gets current weather information for a given location.

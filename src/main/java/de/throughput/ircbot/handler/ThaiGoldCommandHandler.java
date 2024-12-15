@@ -18,7 +18,7 @@ import de.throughput.ircbot.api.CommandHandler;
 /**
  * Command handler for retrieving Thai gold price information.
  */
-@Component
+//@Component
 public class ThaiGoldCommandHandler implements CommandHandler {
 
     private static final String API_URL_LATEST = "https://helsinki.throughput.de/thaigold";
