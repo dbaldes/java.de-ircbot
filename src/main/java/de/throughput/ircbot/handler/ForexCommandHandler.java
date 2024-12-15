@@ -63,9 +63,9 @@ public class ForexCommandHandler implements CommandHandler {
                     } else {
                         BigDecimal rate = BigDecimal.valueOf(rates.values().iterator().next());
                         if (date.isPresent()) {
-                            command.respond(String.format("%s/%s: %.4f on %s", base, symbols, rate, date.get()));
+                            command.respond(String.format("1 %s = %.4f %s: on %s", base, rate, symbols, date.get()));
                         } else {
-                            command.respond(String.format("%s/%s: %.4f", base, symbols, rate));
+                            command.respond(String.format("1 %s = %.4f %s", base, rate, symbols));
                         }
                     }
                 }).exceptionally(ex -> {
