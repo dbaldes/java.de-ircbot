@@ -18,7 +18,7 @@ public class SimpleAiService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimpleAiService.class);
 
-    private static final String MODEL_NAME = "gpt-4o"; // Replace with "gpt-4" if "gpt-4o" is not valid
+    private static final String MODEL_NAME = "gpt-4o-mini";
     private static final int MAX_TOKENS = 300;
 
     private final OpenAiService openAiService;

@@ -45,7 +45,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
             "aireset - deletes the current context for the channel and reloads the system prompt from the file system."
             , true);
 
-    private static final String MODEL_NAME = "gpt-4o";
+    private static final String MODEL_NAME = "gpt-4o-mini";
     private static final int MAX_CONTEXT_MESSAGES = 20;
     private static final int MAX_TOKENS = 100;
     private static final int MAX_IRC_MESSAGE_LENGTH = 420;
