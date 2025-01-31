@@ -15,6 +15,10 @@ public class NewsCommandHandler implements CommandHandler {
         The following is a dump of multiple RSS feeds of various sources.
         Read it and give me a short, 400-character summary of what's going on in the world today:
         
+        -----
+        %s
+        -----
+        
         %s
         """;
 
@@ -38,18 +42,40 @@ public class NewsCommandHandler implements CommandHandler {
         }
 
         String newsDump = newsService.getNews();
-        String basePrompt = NEWS_PROMPT.formatted(newsDump);
 
         if (command.getArgLine().isEmpty()) {
             // No arguments
-            String response = simpleAiService.query(basePrompt);
-            command.respond(response);
+            String response = simpleAiService.query(NEWS_PROMPT.formatted(newsDump,
+                    "What's in the news today?"));
+            sendSplitMessage(command, response);
         } else {
             // With arguments
-            String focusPrompt = "Focus on " + command.getArgLine().get() + ". " + basePrompt;
-            String response = simpleAiService.query(focusPrompt);
-            command.respond(response);
+            String response = simpleAiService.query(NEWS_PROMPT.formatted(newsDump,
+                    "What's in the news today? Focus on: " + command.getArgLine().get()));
+            sendSplitMessage(command, response);
         }
         return true;
+    }
+
+    private void sendSplitMessage(CommandEvent command, String message) {
+        int maxLength = 400; // Keep well below the IRC 512-byte limit
+        int messageLength = message.length();
+        int start = 0;
+
+        while (start < messageLength) {
+            int end = Math.min(start + maxLength, messageLength);
+
+            // Ensure we don't split words by looking for the last space before end
+            if (end < messageLength) {
+                int lastSpace = message.lastIndexOf(' ', end);
+                if (lastSpace > start) {
+                    end = lastSpace; // Adjust split point to avoid breaking words
+                }
+            }
+
+            // Send the chunk
+            command.respond(message.substring(start, end));
+            start = end + 1; // Move to the next chunk
+        }
     }
 }
