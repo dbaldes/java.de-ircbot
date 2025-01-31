@@ -29,6 +29,16 @@
       "title": "The Japan Times - World News",
       "political_circle": "Japanese mainstream",
       "feed_url": "https://www.japantimes.co.jp/feed/"
+    },
+    {
+      "title": "Times of India - World News",
+      "political_circle": "Indian mainstream",
+      "feed_url": "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
+    },
+    {
+      "title": "MercoPress",
+      "political_circle": "South American regional",
+      "feed_url": "https://en.mercopress.com/rss/"
     }
   ]
 }
