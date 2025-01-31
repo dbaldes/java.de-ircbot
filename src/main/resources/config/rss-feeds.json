@@ -1,0 +1,34 @@
+{
+  "feeds": [
+    {
+      "title": "BBC World News",
+      "political_circle": "Western mainstream",
+      "feed_url": "https://feeds.bbci.co.uk/news/world/rss.xml"
+    },
+    {
+      "title": "RT (Russia Today) - World News",
+      "political_circle": "Russian state",
+      "feed_url": "https://www.rt.com/rss/news/"
+    },
+    {
+      "title": "Xinhua News - World",
+      "political_circle": "Chinese state",
+      "feed_url": "http://www.xinhuanet.com/english/rss/worldrss.xml"
+    },
+    {
+      "title": "Al Jazeera - World News",
+      "political_circle": "Middle Eastern",
+      "feed_url": "https://www.aljazeera.com/xml/rss/all.xml"
+    },
+    {
+      "title": "AllAfrica - Top Headlines",
+      "political_circle": "African regional",
+      "feed_url": "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf"
+    },
+    {
+      "title": "The Japan Times - World News",
+      "political_circle": "Japanese mainstream",
+      "feed_url": "https://www.japantimes.co.jp/feed/"
+    }
+  ]
+}
