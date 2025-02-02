@@ -58,15 +58,14 @@ public class NewsCommandHandler implements CommandHandler {
     }
 
     private void sendSplitMessage(CommandEvent command, String message) {
-        int maxLength = 400; // Keep well below the IRC 512-byte limit
-        int messageLength = message.length();
+        int maxLength = 420; // Keep well below the IRC 512-byte limit
         int start = 0;
 
-        while (start < messageLength) {
-            int end = Math.min(start + maxLength, messageLength);
+        while (start < message.length()) {
+            int end = Math.min(start + maxLength, message.length());
 
             // Ensure we don't split words by looking for the last space before end
-            if (end < messageLength) {
+            if (end < message.length()) {
                 int lastSpace = message.lastIndexOf(' ', end);
                 if (lastSpace > start) {
                     end = lastSpace; // Adjust split point to avoid breaking words
@@ -74,7 +73,7 @@ public class NewsCommandHandler implements CommandHandler {
             }
 
             // Send the chunk
-            command.respond(message.substring(start, end));
+            command.getEvent().getChannel().send().message(message.substring(start, end));
             start = end + 1; // Move to the next chunk
         }
     }
