@@ -20,13 +20,13 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
+import java.util.Properties;
 
 @SpringBootApplication
 @EnableScheduling
 public class IrcBotMain {
 
     private static final String REALNAME = "Dr. Ashoka Mockit";
-    private static final String VERSION = "1.0 - of course.";
     private static final int DELAY_RECONNECT_MS = 5000;
 
     public static void main(String[] args) {
@@ -58,8 +58,8 @@ public class IrcBotMain {
         Configuration.Builder config = new Configuration.Builder().setAutoNickChange(true)
                 .setAutoReconnect(true)
                 .setAutoReconnectDelay(new StaticDelay(DELAY_RECONNECT_MS))
-                .setVersion(VERSION)
-                .setRealName(REALNAME)
+                .setVersion(getVersion())
+                .setRealName(REALNAME + " (" + getVersion() + ")")
                 .addListener(cmdListener)
                 .addListener(convListener)
                 .addListener(adminCommandRunner)
@@ -118,6 +118,25 @@ public class IrcBotMain {
     @Bean
     public OpenAiService openAiService(@Value("${openai.apiKey}") String apiKey) {
         return new OpenAiService(apiKey, Duration.ofSeconds(20));
+    }
+
+    private static String getVersion() {
+        Properties properties = new Properties();
+        try (var stream = IrcBotMain.class.getResourceAsStream("/build-info.properties")) {
+            if (stream != null) {
+                properties.load(stream);
+                String commit = properties.getProperty("build.commit", "unknown");
+                String number = properties.getProperty("build.number", "unknown");
+                // Shorten commit hash to first 7 characters if longer
+                if (commit.length() > 7) {
+                    commit = commit.substring(0, 7);
+                }
+                return "build " + number + " - commit: " + commit;
+            }
+        } catch (IOException e) {
+            // Handle exception as needed
+        }
+        return "build info not available";
     }
 
 }

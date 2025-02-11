@@ -29,6 +29,12 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven
 
+      - name: Generate Build Info
+        run: |
+          mkdir -p src/main/resources
+          echo "build.commit=${{ github.sha }}" > src/main/resources/build-info.properties
+          echo "build.number=${{ github.run_number }}" >> src/main/resources/build-info.properties
+
       - name: Build with Maven
         run: mvn install -DskipTests
 
