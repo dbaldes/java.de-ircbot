@@ -12,8 +12,8 @@ public class NewsCommandHandler implements CommandHandler {
 
     private static final Command CMD_NEWS = new Command("news", "news [topic] - show a short summary of current news, optionally focusing on a topic");
     private static final String NEWS_PROMPT = """
-        The following is a dump of multiple RSS feeds of various sources.
-        Read it and give me a short, 400-character summary of what's going on in the world today:
+        The following is a dump of multiple news feeds of various sources.
+        Read it, and give me a short, 300-character summary of what's going on in the world today:
         
         -----
         %s
@@ -51,7 +51,8 @@ public class NewsCommandHandler implements CommandHandler {
         } else {
             // With arguments
             String response = simpleAiService.query(NEWS_PROMPT.formatted(newsDump,
-                    "What's in the news today? Focus on: " + command.getArgLine().get()));
+                    "What's in the news today? Focus on: '" + command.getArgLine().get()) + "'. "
+                  + "If the news don't say anything about that topic, say just that.");
             sendSplitMessage(command, response);
         }
         return true;
