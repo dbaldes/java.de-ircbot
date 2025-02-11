@@ -84,7 +84,7 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
                        .map(entry -> {
                            StockQuote quote = entry.getValue();
 
-                           String priceColor = quote.change.signum() >= 0 ? Colors.GREEN : Colors.RED;
+                           String priceColor = quote.change.signum() >= 0 ? Colors.DARK_GREEN : Colors.RED;
                            return String.format("%s: %s%s (%+.2f%%)%s", quote.symbol, priceColor, renderPrice(quote.price, DEFAULT_CURRENCY),
                                    quote.changePercent, Colors.NORMAL);
                        })
