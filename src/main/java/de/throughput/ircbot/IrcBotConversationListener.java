@@ -57,6 +57,9 @@ public class IrcBotConversationListener extends ListenerAdapter {
                 .getNick())) {
             return; // don't listen to ourselves
         }
+        if (nick.equals("DrGolang")) {
+            return; // don't talk to DrGolang
+        }
         if (rateLimiter.ignore(nick)) {
             return;
         }
