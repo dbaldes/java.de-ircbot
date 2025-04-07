@@ -100,6 +100,17 @@ jobs:
       - name: Run Integration Tests
         run: mvn verify -Pintegration-tests
 
+      - name: Dump Docker Logs
+        if: ${{ always() }}
+        run: |
+          docker ps -a -q --filter "name=ircbot"
+          CONTAINER_ID=$(docker ps -a -q --filter "name=ircbot" | head -n 1)
+          if [ -n "$CONTAINER_ID" ]; then
+            docker logs "$CONTAINER_ID"
+          else
+            echo "No container found matching 'ircbot'"
+          fi
+
   deploy:
     runs-on: ubuntu-latest
     needs: integration-test
