@@ -9,6 +9,8 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.UtilSSLSocketFactory;
 import org.pircbotx.cap.TLSCapHandler;
 import org.pircbotx.delay.StaticDelay;
+import org.pircbotx.hooks.ListenerAdapter;
+import org.pircbotx.hooks.events.ConnectEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -69,6 +71,14 @@ public class IrcBotMain {
                 .setNickservPassword(botConfig.getNickservPassword())
                 .addAutoJoinChannels(botConfig.getChannels())
                 .setNickservDelayJoin(true);
+
+                config.getListenerManager().addListener(new ListenerAdapter() {
+                    @Override
+                    public void onConnect(ConnectEvent event) {
+                        // disable deaf_commonchan
+                        event.getBot().sendIRC().mode(event.getBot().getNick(), "-c");
+                    }
+                });
 
         if (botConfig.isSsl() || botConfig.isTls()) {
             SSLSocketFactory socketFactory = null;
