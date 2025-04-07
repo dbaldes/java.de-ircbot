@@ -41,7 +41,7 @@ class IrcBotIT {
         }).start();
 
         // Give the bot some time to connect
-        Thread.sleep(5000);
+        Thread.sleep(7000);
 
         // Tell the bot to join #java.de
         bot.sendIRC().message("DrMockIt", "JOIN " + CHANNEL);

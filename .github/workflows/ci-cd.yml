@@ -42,7 +42,7 @@ jobs:
         run: mvn test
 
       - name: Build Docker image
-        run: docker build --build-arg jarfile=target/ircbot-SNAPSHOT.jar -t ghcr.io/${{ github.repository }}/ircbot:temp .
+        run: docker build --build-arg jarfile=target/ircbot-0.0.1-SNAPSHOT.jar -t ghcr.io/${{ github.repository }}/ircbot:temp .
 
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
