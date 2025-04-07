@@ -46,7 +46,7 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
 
     private final String apiKey;
 
-    public StockAlphavantageCommandHandler(@Value("alphavantage.apiKey") String apiKey) {
+    public StockAlphavantageCommandHandler(@Value("${alphavantage.apiKey}") String apiKey) {
         this.apiKey = apiKey;
     }
 
