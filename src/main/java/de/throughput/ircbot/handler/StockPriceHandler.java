@@ -95,12 +95,14 @@ public class StockPriceHandler implements CommandHandler {
                     String status = (String) reqResult.get("status");
                     if ("success".equalsIgnoreCase(status)) {
                         Map<String, Object> response = (Map<String, Object>) reqResult.get("response");
-                        BigDecimal priceDecimal = new BigDecimal(response.get("price").toString());
-                        String price = priceDecimal.setScale(2, RoundingMode.HALF_UP).toPlainString();
-                        return symbol + ": " + price;
-                    } else {
-                        return symbol + ": error";
+                        Object price = response.get("price");
+                        if (price != null) {
+                            BigDecimal priceDecimal = new BigDecimal(price.toString());
+                            String roundedPrice = priceDecimal.setScale(2, RoundingMode.HALF_UP).toPlainString();
+                            return symbol + ": " + roundedPrice;
+                        }
                     }
+                    return symbol + ": error";
                 })
                 .collect(Collectors.joining(" "));
     }
