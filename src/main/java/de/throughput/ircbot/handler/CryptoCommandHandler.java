@@ -42,7 +42,7 @@ import de.throughput.ircbot.api.CommandHandler;
 public class CryptoCommandHandler implements CommandHandler {
 
     // note the special regex which matches letters including umlauts in the second group.
-    private static final Pattern PATTERN_QUOTE_CURRENCY = Pattern.compile("^(.*)\\s+in\\s+([\\p{L}\\d_]+)\\s*$");
+    private static final Pattern PATTERN_QUOTE_CURRENCY = Pattern.compile("^(?:(.*)\\s+)?in\\s+([\\p{L}\\d_]+)\\s*$");
     private static final Pattern PATTERN_AMOUNT = Pattern.compile("^(\\d*(\\.\\d+)?)\\s+(.*)$");
     private static final BigDecimal ONE_HUNDREDTH = new BigDecimal("0.01");
     private static final BigDecimal ONE_TENHOUSANDTH = new BigDecimal("0.0001");
@@ -87,11 +87,23 @@ public class CryptoCommandHandler implements CommandHandler {
     }
 
     private void handleCryptoCommand(CommandEvent command) {
-        command.getArgLine()
-                .map(this::toCmcQuery)
-                .ifPresentOrElse(
-                        query -> getPriceInfo(command, query),
-                        () -> getPriceInfo(command, new CmcTopCurrenciesQuery()));
+        command.getArgLine().ifPresentOrElse(argLine -> {
+            String input = argLine.trim();
+            Matcher quoteMatcher = PATTERN_QUOTE_CURRENCY.matcher(input);
+            // “in EUR” (or “in GBP”, etc.) → top‑ten in that currency
+            if (quoteMatcher.matches() && quoteMatcher.group(1) == null) {
+                CmcTopCurrenciesQuery top = new CmcTopCurrenciesQuery();
+                top.setConvert(quoteMatcher.group(2).toUpperCase(Locale.GERMAN));
+                getPriceInfo(command, top);
+            } else {
+                // anything else → per‐symbol lookup
+                CmcLatestQuoteQuery single = toCmcQuery(input);
+                getPriceInfo(command, single);
+            }
+        }, () -> {
+            // no args → top‑ten in USD
+            getPriceInfo(command, new CmcTopCurrenciesQuery());
+        });
     }
 
     private void handleTlastCommand(CommandEvent command) {
