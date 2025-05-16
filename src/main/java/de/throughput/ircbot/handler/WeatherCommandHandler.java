@@ -103,7 +103,7 @@ public class WeatherCommandHandler implements CommandHandler {
         int humidity = ((Number) main.get("humidity")).intValue();
         String description = (String) weather.get("description");
 
-        return String.format("%s, %s: %.1f°C | humidity at %d | %s", location.getName(), location.getCountry(), tempC, humidity, description);
+        return String.format("%s, %s: %.1f°C | humidity at %d%% | %s", location.getName(), location.getCountry(), tempC, humidity, description);
     }
 
     @Getter
