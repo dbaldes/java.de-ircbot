@@ -21,7 +21,7 @@ import java.util.Set;
 @Component
 public class AthCommandHandler implements CommandHandler {
 
-    private static final Command CMD_ATH = new Command("ath", "ath <id> - get all-time-high of a cryptocurrency by CoinGecko ID in BTC, USD, and EUR");
+    private static final Command CMD_ATH = new Command("ath", "ath <id> - get all-time-high of a cryptocurrency by CoinGecko ID in USD and EUR with dates");
     private static final String API_URL = "https://api.coingecko.com/api/v3/coins/";
 
     @Value("${coingecko.apiKey}")
@@ -70,16 +70,22 @@ public class AthCommandHandler implements CommandHandler {
                         JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
                         JsonObject marketData = json.getAsJsonObject("market_data");
                         JsonObject ath = marketData.getAsJsonObject("ath");
+                        JsonObject athDate = marketData.getAsJsonObject("ath_date");
 
-                        BigDecimal usd = ath.get("usd").getAsBigDecimal();
-                        BigDecimal eur = ath.get("eur").getAsBigDecimal();
-                        BigDecimal btc = ath.get("btc").getAsBigDecimal();
+                        BigDecimal usdValue = ath.get("usd").getAsBigDecimal();
+                        BigDecimal eurValue = ath.get("eur").getAsBigDecimal();
+                        String usdRawDate = athDate.get("usd").getAsString();
+                        String eurRawDate = athDate.get("eur").getAsString();
+                        String usdDate = usdRawDate.contains("T") ? usdRawDate.substring(0, usdRawDate.indexOf('T')) : usdRawDate;
+                        String eurDate = eurRawDate.contains("T") ? eurRawDate.substring(0, eurRawDate.indexOf('T')) : eurRawDate;
 
-                        command.respond(String.format("ATH of %s: %s BTC, %s USD, %s EUR - data provided by https://www.coingecko.com/",
+                        command.respond(String.format(
+                                "ATH of %s: %s USD (%s), %s EUR (%s) - data provided by https://www.coingecko.com/",
                                 id,
-                                btc.toPlainString(),
-                                usd.toPlainString(),
-                                eur.toPlainString()));
+                                usdValue.toPlainString(),
+                                usdDate,
+                                eurValue.toPlainString(),
+                                eurDate));
                     } catch (Exception e) {
                         command.respond("Could not parse ATH data");
                     }
