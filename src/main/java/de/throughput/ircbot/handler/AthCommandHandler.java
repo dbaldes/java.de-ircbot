@@ -21,8 +21,9 @@ import java.util.Set;
 @Component
 public class AthCommandHandler implements CommandHandler {
 
-    private static final Command CMD_ATH = new Command("ath", "ath <id> - get all-time-high of a cryptocurrency by CoinGecko ID in USD and EUR with dates");
+    private static final Command CMD_ATH = new Command("ath", "ath [<id>] - get all-time-high of a cryptocurrency by CoinGecko ID (default: bitcoin) in USD and EUR with dates");
     private static final String API_URL = "https://api.coingecko.com/api/v3/coins/";
+    private static final String DEFAULT_ID = "bitcoin";
 
     @Value("${coingecko.apiKey}")
     private String apiKey;
@@ -45,10 +46,10 @@ public class AthCommandHandler implements CommandHandler {
         if (!command.getCommand().equals(CMD_ATH)) {
             return false;
         }
-        command.getArgLine().ifPresentOrElse(arg -> {
-            String id = arg.trim().toLowerCase(Locale.ROOT);
-            fetchAth(command, id);
-        }, () -> command.respond("Usage: !ath <id>"));
+        String id = command.getArgLine().map(arg -> arg.trim().toLowerCase(Locale.ROOT))
+                .filter(s -> !s.isEmpty())
+                .orElse(DEFAULT_ID);
+        fetchAth(command, id);
         return true;
     }
 
