@@ -17,7 +17,7 @@ production when changes are pushed to the master branch and the tests are succes
 ## Features
 
 - The bot will respond to messages if directly addressed by its nick, using the OpenAI chat completion 
-  API and the `gpt-4o` model. The bot keeps a context of 20 messages during conversation. A system prompt
+  API and the `gpt-4o-mini` model. The bot keeps a context of 20 messages during conversation. A system prompt
   is loaded from a configuration file, giving the bot its unique personality. Note: only messages directly
   addressed to the bot, as well as its own responses to those, are added to the context and thus sent to 
   OpenAI.
