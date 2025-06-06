@@ -6,6 +6,7 @@ import com.theokanning.openai.completion.chat.ChatCompletionResult;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
+import org.apache.commons.lang3.tuple.Pair;
 import de.throughput.ircbot.api.Command;
 import de.throughput.ircbot.api.CommandEvent;
 import de.throughput.ircbot.api.CommandHandler;
@@ -55,11 +56,26 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
 
     private final OpenAiService openAiService;
     private final Path systemPromptPath;
+    private final Map<String, Pair<Command, CommandHandler>> autoCommandHandlers = new ConcurrentHashMap<>();
+    private String autoCommandHelp;
     private String systemPrompt;
 
-    public OpenAiChatMessageHandler(OpenAiService openAiService, @Value("${openai.systemPrompt.path}") Path systemPromptPath) {
+    public OpenAiChatMessageHandler(
+            OpenAiService openAiService,
+            @Value("${openai.systemPrompt.path}") Path systemPromptPath,
+            List<CommandHandler> commandHandlers) {
         this.openAiService = openAiService;
         this.systemPromptPath = systemPromptPath;
+
+        StringBuilder helpBuilder = new StringBuilder();
+        commandHandlers.forEach(handler -> handler.getCommands().forEach(cmd -> {
+            if (Set.of("stock", "crypto", "aiimage", "weather").contains(cmd.getCommand())) {
+                autoCommandHandlers.put(cmd.getCommand(), Pair.of(cmd, handler));
+                helpBuilder.append('!').append(cmd.getUsage()).append('\n');
+            }
+        }));
+        autoCommandHelp = helpBuilder.toString().trim();
+
         readSystemPromptFromFile();
     }
 
@@ -103,6 +119,14 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         synchronized (contextMessages) {
             try {
                 String channel = event.getChannel().getName();
+
+                String commandLine = detectAutoCommand(contextMessages, event.getUser().getNick(), message);
+                if (commandLine != null) {
+                    executeCommand(event, commandLine);
+                    contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.SYSTEM.value(),
+                            "Executed command: " + commandLine)));
+                }
+
                 var request = ChatCompletionRequest.builder()
                         .model(MODEL_NAME)
                         .maxTokens(MAX_TOKENS)
@@ -127,6 +151,63 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private static String sanitizeResponse(String content) {
         String trim = content.replaceAll("\\s+", " ").trim();
         return trim.length() > MAX_IRC_MESSAGE_LENGTH ? trim.substring(0, MAX_IRC_MESSAGE_LENGTH) : trim;
+    }
+
+    /**
+     * Uses the AI service to determine if the message should trigger a bot command.
+     * Returns the command line if a command should be executed or {@code null} otherwise.
+     */
+    private String detectAutoCommand(LinkedList<TimedChatMessage> contextMessages, String nick, String message) {
+        LinkedList<TimedChatMessage> copy = new LinkedList<>(contextMessages);
+        copy.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick)));
+        pruneOldMessages(copy);
+
+        List<ChatMessage> promptMessages = new ArrayList<>();
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
+        promptMessages.addAll(copy);
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(),
+                "Available commands:\n" + autoCommandHelp +
+                        "\nIf the user's last message should trigger one of these commands, respond with the command line starting with '!'. Otherwise respond with NONE."));
+
+        var request = ChatCompletionRequest.builder()
+                .model(MODEL_NAME)
+                .maxTokens(20)
+                .messages(promptMessages)
+                .build();
+
+        ChatCompletionResult result = openAiService.createChatCompletion(request);
+        String response = result.getChoices().get(0).getMessage().getContent()
+                .replace("`", "")
+                .replace("\n", "")
+                .replace("\r", "")
+                .trim();
+
+        if (response.equalsIgnoreCase("none")) {
+            return null;
+        }
+
+        if (!response.startsWith("!")) {
+            response = "!" + response;
+        }
+        return response;
+    }
+
+    /**
+     * Executes the given command line using the registered command handlers.
+     */
+    private void executeCommand(MessageEvent event, String commandLine) {
+        String[] parts = commandLine.substring(1).split("\\s+", 2);
+        String cmdName = parts[0];
+        String argLine = parts.length > 1 ? parts[1] : null;
+
+        Pair<Command, CommandHandler> handlerPair = autoCommandHandlers.get(cmdName);
+        if (handlerPair == null) {
+            return;
+        }
+
+        CommandEvent cmdEvent = new CommandEvent(event, handlerPair.getLeft(), "!", java.util.Optional.ofNullable(argLine));
+        handlerPair.getRight().onCommand(cmdEvent);
     }
 
     /**
