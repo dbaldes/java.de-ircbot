@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reponds to messages directed at the bot, using the OpenAI API.
@@ -138,27 +140,35 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
 
                 String commandLine = detectAutoCommand(contextMessages, event.getUser().getNick(), message);
                 if (commandLine != null) {
-                    executeCommand(event, commandLine);
+                    String cmdOutput = executeCommand(event, commandLine);
                     contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.SYSTEM.value(),
                             "Executed command: " + commandLine)));
+                    if (cmdOutput != null) {
+                        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.ASSISTANT.value(), cmdOutput)));
+                    }
                 }
 
-                var request = ChatCompletionRequest.builder()
-                        .model(MODEL_NAME)
-                        .maxTokens(MAX_TOKENS)
-                        .messages(createPromptMessages(contextMessages, channel, event.getUser().getNick(), message))
-                        .build();
-
-                ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
-
-                ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
-                contextMessages.add(new TimedChatMessage(responseMessage));
-                event.respond(sanitizeResponse(responseMessage.getContent()));
+                sendChatCompletion(event, contextMessages, channel, event.getUser().getNick(), message);
             } catch (Exception e) {
                 LOG.error(e.getMessage(), e);
                 event.respond("Tja. (" + ExceptionUtils.getRootCauseMessage(e) + ")");
             }
         }
+    }
+
+    private void sendChatCompletion(MessageEvent event, LinkedList<TimedChatMessage> contextMessages,
+                                    String channel, String nick, String message) {
+        var request = ChatCompletionRequest.builder()
+                .model(MODEL_NAME)
+                .maxTokens(MAX_TOKENS)
+                .messages(createPromptMessages(contextMessages, channel, nick, message))
+                .build();
+
+        ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
+
+        ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
+        contextMessages.add(new TimedChatMessage(responseMessage));
+        event.respond(sanitizeResponse(responseMessage.getContent()));
     }
 
     /**
@@ -212,18 +222,26 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     /**
      * Executes the given command line using the registered command handlers.
      */
-    private void executeCommand(MessageEvent event, String commandLine) {
+    private String executeCommand(MessageEvent event, String commandLine) {
         String[] parts = commandLine.substring(1).split("\\s+", 2);
         String cmdName = parts[0];
         String argLine = parts.length > 1 ? parts[1] : null;
 
         Pair<Command, CommandHandler> handlerPair = autoCommandHandlers.get(cmdName);
         if (handlerPair == null) {
-            return;
+            return null;
         }
 
-        CommandEvent cmdEvent = new CommandEvent(event, handlerPair.getLeft(), "!", java.util.Optional.ofNullable(argLine));
+        RecordingCommandEvent cmdEvent = new RecordingCommandEvent(event, handlerPair.getLeft(), "!",
+                java.util.Optional.ofNullable(argLine));
         handlerPair.getRight().onCommand(cmdEvent);
+
+        try {
+            return cmdEvent.getResponse().get(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOG.warn("timed out waiting for command response", e);
+            return null;
+        }
     }
 
     /**
@@ -285,6 +303,31 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     @Override
     public boolean isOnlyTalkChannels() {
         return true;
+    }
+
+    /**
+     * CommandEvent that captures the first response for inclusion in the chat context.
+     */
+    private static class RecordingCommandEvent extends CommandEvent {
+
+        private final CompletableFuture<String> response = new CompletableFuture<>();
+
+        public RecordingCommandEvent(MessageEvent event, Command command, String commandPrefix,
+                                     java.util.Optional<String> argLine) {
+            super(event, command, commandPrefix, argLine);
+        }
+
+        @Override
+        public void respond(String answer) {
+            if (!response.isDone()) {
+                response.complete(answer);
+            }
+            super.respond(answer);
+        }
+
+        public CompletableFuture<String> getResponse() {
+            return response;
+        }
     }
 
     /**
