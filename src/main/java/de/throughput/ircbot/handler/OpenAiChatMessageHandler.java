@@ -15,6 +15,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -57,16 +58,19 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private final OpenAiService openAiService;
     private final Path systemPromptPath;
     private final Map<String, Pair<Command, CommandHandler>> autoCommandHandlers = new ConcurrentHashMap<>();
-    private String autoCommandHelp;
+    private String autoCommandHelp = "";
     private String systemPrompt;
 
     public OpenAiChatMessageHandler(
             OpenAiService openAiService,
-            @Value("${openai.systemPrompt.path}") Path systemPromptPath,
-            List<CommandHandler> commandHandlers) {
+            @Value("${openai.systemPrompt.path}") Path systemPromptPath) {
         this.openAiService = openAiService;
         this.systemPromptPath = systemPromptPath;
+        readSystemPromptFromFile();
+    }
 
+    @Autowired
+    public void setCommandHandlers(List<CommandHandler> commandHandlers) {
         StringBuilder helpBuilder = new StringBuilder();
         commandHandlers.forEach(handler -> handler.getCommands().forEach(cmd -> {
             if (Set.of("stock", "crypto", "aiimage", "weather").contains(cmd.getCommand())) {
@@ -75,8 +79,6 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
             }
         }));
         autoCommandHelp = helpBuilder.toString().trim();
-
-        readSystemPromptFromFile();
     }
 
     @Override
