@@ -6,7 +6,6 @@ import com.theokanning.openai.completion.chat.ChatCompletionResult;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
-import org.apache.commons.lang3.tuple.Pair;
 import de.throughput.ircbot.api.Command;
 import de.throughput.ircbot.api.CommandEvent;
 import de.throughput.ircbot.api.CommandHandler;
@@ -15,9 +14,11 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Reponds to messages directed at the bot, using the OpenAI API.
  */
 @Component
-public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler {
+public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler, ApplicationContextAware {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
 
@@ -60,6 +61,8 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private final Map<String, Pair<Command, CommandHandler>> autoCommandHandlers = new ConcurrentHashMap<>();
     private String autoCommandHelp = "";
     private String systemPrompt;
+    private ApplicationContext applicationContext;
+    private boolean commandsInitialized = false;
 
     public OpenAiChatMessageHandler(
             OpenAiService openAiService,
@@ -69,10 +72,20 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         readSystemPromptFromFile();
     }
 
-    @Autowired
-    public void setCommandHandlers(List<CommandHandler> commandHandlers) {
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
+
+    private void initAutoCommands() {
+        if (commandsInitialized || applicationContext == null) {
+            return;
+        }
+        commandsInitialized = true;
         StringBuilder helpBuilder = new StringBuilder();
-        commandHandlers.forEach(handler -> handler.getCommands().forEach(cmd -> {
+        Map<String, CommandHandler> handlers = applicationContext.getBeansOfType(CommandHandler.class);
+        handlers.values().forEach(handler -> handler.getCommands().forEach(cmd -> {
             if (Set.of("stock", "crypto", "aiimage", "weather").contains(cmd.getCommand())) {
                 autoCommandHandlers.put(cmd.getCommand(), Pair.of(cmd, handler));
                 helpBuilder.append('!').append(cmd.getUsage()).append('\n');
@@ -120,6 +133,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         var contextMessages = contextMessagesPerChannel.computeIfAbsent(event.getChannel().getName(), k -> new LinkedList<>());
         synchronized (contextMessages) {
             try {
+                initAutoCommands();
                 String channel = event.getChannel().getName();
 
                 String commandLine = detectAutoCommand(contextMessages, event.getUser().getNick(), message);
