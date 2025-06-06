@@ -16,6 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,12 +35,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reponds to messages directed at the bot, using the OpenAI API.
  */
 @Component
-public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler {
+public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler, ApplicationContextAware {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
 
@@ -55,12 +60,40 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
 
     private final OpenAiService openAiService;
     private final Path systemPromptPath;
+    private final Map<String, Pair<Command, CommandHandler>> autoCommandHandlers = new ConcurrentHashMap<>();
+    private String autoCommandHelp = "";
     private String systemPrompt;
+    private ApplicationContext applicationContext;
+    private boolean commandsInitialized = false;
 
-    public OpenAiChatMessageHandler(OpenAiService openAiService, @Value("${openai.systemPrompt.path}") Path systemPromptPath) {
+    public OpenAiChatMessageHandler(
+            OpenAiService openAiService,
+            @Value("${openai.systemPrompt.path}") Path systemPromptPath) {
         this.openAiService = openAiService;
         this.systemPromptPath = systemPromptPath;
         readSystemPromptFromFile();
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
+
+    private void initAutoCommands() {
+        if (commandsInitialized || applicationContext == null) {
+            return;
+        }
+        commandsInitialized = true;
+        StringBuilder helpBuilder = new StringBuilder();
+        Map<String, CommandHandler> handlers = applicationContext.getBeansOfType(CommandHandler.class);
+        handlers.values().forEach(handler -> handler.getCommands().forEach(cmd -> {
+            if (Set.of("stock", "crypto", "aiimage", "weather").contains(cmd.getCommand())) {
+                autoCommandHandlers.put(cmd.getCommand(), Pair.of(cmd, handler));
+                helpBuilder.append('!').append(cmd.getUsage()).append('\n');
+            }
+        }));
+        autoCommandHelp = helpBuilder.toString().trim();
     }
 
     @Override
@@ -102,23 +135,40 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         var contextMessages = contextMessagesPerChannel.computeIfAbsent(event.getChannel().getName(), k -> new LinkedList<>());
         synchronized (contextMessages) {
             try {
+                initAutoCommands();
                 String channel = event.getChannel().getName();
-                var request = ChatCompletionRequest.builder()
-                        .model(MODEL_NAME)
-                        .maxTokens(MAX_TOKENS)
-                        .messages(createPromptMessages(contextMessages, channel, event.getUser().getNick(), message))
-                        .build();
 
-                ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
+                String commandLine = detectAutoCommand(contextMessages, event.getUser().getNick(), message);
+                if (commandLine != null) {
+                    String cmdOutput = executeCommand(event, commandLine);
+                    contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.SYSTEM.value(),
+                            "Executed command: " + commandLine)));
+                    if (cmdOutput != null) {
+                        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.ASSISTANT.value(), cmdOutput)));
+                    }
+                }
 
-                ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
-                contextMessages.add(new TimedChatMessage(responseMessage));
-                event.respond(sanitizeResponse(responseMessage.getContent()));
+                sendChatCompletion(event, contextMessages, channel, event.getUser().getNick(), message);
             } catch (Exception e) {
                 LOG.error(e.getMessage(), e);
                 event.respond("Tja. (" + ExceptionUtils.getRootCauseMessage(e) + ")");
             }
         }
+    }
+
+    private void sendChatCompletion(MessageEvent event, LinkedList<TimedChatMessage> contextMessages,
+                                    String channel, String nick, String message) {
+        var request = ChatCompletionRequest.builder()
+                .model(MODEL_NAME)
+                .maxTokens(MAX_TOKENS)
+                .messages(createPromptMessages(contextMessages, channel, nick, message))
+                .build();
+
+        ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
+
+        ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
+        contextMessages.add(new TimedChatMessage(responseMessage));
+        event.respond(sanitizeResponse(responseMessage.getContent()));
     }
 
     /**
@@ -127,6 +177,71 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private static String sanitizeResponse(String content) {
         String trim = content.replaceAll("\\s+", " ").trim();
         return trim.length() > MAX_IRC_MESSAGE_LENGTH ? trim.substring(0, MAX_IRC_MESSAGE_LENGTH) : trim;
+    }
+
+    /**
+     * Uses the AI service to determine if the message should trigger a bot command.
+     * Returns the command line if a command should be executed or {@code null} otherwise.
+     */
+    private String detectAutoCommand(LinkedList<TimedChatMessage> contextMessages, String nick, String message) {
+        LinkedList<TimedChatMessage> copy = new LinkedList<>(contextMessages);
+        copy.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick)));
+        pruneOldMessages(copy);
+
+        List<ChatMessage> promptMessages = new ArrayList<>();
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
+        promptMessages.addAll(copy);
+        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(),
+                "Available commands:\n" + autoCommandHelp +
+                        "\nIf the user's last message should trigger one of these commands, respond with the command line starting with '!'. Otherwise respond with NONE."));
+
+        var request = ChatCompletionRequest.builder()
+                .model(MODEL_NAME)
+                .maxTokens(20)
+                .messages(promptMessages)
+                .build();
+
+        ChatCompletionResult result = openAiService.createChatCompletion(request);
+        String response = result.getChoices().get(0).getMessage().getContent()
+                .replace("`", "")
+                .replace("\n", "")
+                .replace("\r", "")
+                .trim();
+
+        if (response.equalsIgnoreCase("none")) {
+            return null;
+        }
+
+        if (!response.startsWith("!")) {
+            response = "!" + response;
+        }
+        return response;
+    }
+
+    /**
+     * Executes the given command line using the registered command handlers.
+     */
+    private String executeCommand(MessageEvent event, String commandLine) {
+        String[] parts = commandLine.substring(1).split("\\s+", 2);
+        String cmdName = parts[0];
+        String argLine = parts.length > 1 ? parts[1] : null;
+
+        Pair<Command, CommandHandler> handlerPair = autoCommandHandlers.get(cmdName);
+        if (handlerPair == null) {
+            return null;
+        }
+
+        RecordingCommandEvent cmdEvent = new RecordingCommandEvent(event, handlerPair.getLeft(), "!",
+                java.util.Optional.ofNullable(argLine));
+        handlerPair.getRight().onCommand(cmdEvent);
+
+        try {
+            return cmdEvent.getResponse().get(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOG.warn("timed out waiting for command response", e);
+            return null;
+        }
     }
 
     /**
@@ -188,6 +303,31 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     @Override
     public boolean isOnlyTalkChannels() {
         return true;
+    }
+
+    /**
+     * CommandEvent that captures the first response for inclusion in the chat context.
+     */
+    private static class RecordingCommandEvent extends CommandEvent {
+
+        private final CompletableFuture<String> response = new CompletableFuture<>();
+
+        public RecordingCommandEvent(MessageEvent event, Command command, String commandPrefix,
+                                     java.util.Optional<String> argLine) {
+            super(event, command, commandPrefix, argLine);
+        }
+
+        @Override
+        public void respond(String answer) {
+            if (!response.isDone()) {
+                response.complete(answer);
+            }
+            super.respond(answer);
+        }
+
+        public CompletableFuture<String> getResponse() {
+            return response;
+        }
     }
 
     /**
