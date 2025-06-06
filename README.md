@@ -36,7 +36,7 @@ This list is not exhaustive.
 
 ## Available Commands
 
-Commands can start with either `!` or `*`. Commands can be abbreviated by just using one or more of its 
+Commands can start with either `!` or `*`. Commands can be abbreviated by just using one or more of its
 starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambiguous, the bot will tell you.
 
 ### avherald
@@ -55,6 +55,10 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Usage**: `!airport <IATA or ICAO code>`
 - **Description**: Provides links to information about the specified airport.
 
+### ath
+- **Usage**: `!ath [<id>]`
+- **Description**: Shows the all-time-high of a cryptocurrency by CoinGecko ID (defaults to bitcoin) in USD and EUR with dates.
+
 ### crypto
 - **Usage**: `crypto [<amount>] <symbols> [in <currency>]`
 - **Description**: Gets price information on cryptocurrencies. Defaults to USD and amount to 1.
@@ -71,6 +75,10 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Usage**: `!forget <key>`
 - **Description**: Forgets a specified fact.
 
+### flip
+- **Usage**: `!flip <text>`
+- **Description**: Flips `<text>` over in rage.
+
 ### lagerfeld
 - **Usage**: `!lagerfeld <text>`
 - **Description**: Responds with an AI-generated Karl Lagerfeld quote.
@@ -86,6 +94,10 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 ### quoter
 - **Usage**: `!quoter <nick>`
 - **Description**: Retrieves a random quote from the specified nick.
+
+### news
+- **Usage**: `!news [topic]`
+- **Description**: Shows a short summary of current news, optionally focusing on a topic.
 
 ### remindme
 - **Usage**: `remindme <when>: <text>`
@@ -115,9 +127,21 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Usage**: `!stock <symbols>`
 - **Description**: Gets price information on stock symbols.
 
+### price
+- **Usage**: `!price <symbols>`
+- **Description**: Gets real-time price information on stock symbols.
+
 ### fx
 - **Usage**: `!fx <symbols> [YYYY-MM-DD]`
 - **Description**: Gets currency exchange rates.
+
+### image
+- **Usage**: `!image <prompt>`
+- **Description**: Generates an image from the given prompt.
+
+### aiimage
+- **Usage**: `!aiimage <prompt>`
+- **Description**: Generates an image prompt using AI, then creates an image from it.
 
 ### weather
 - **Usage** `!weather <location>`
