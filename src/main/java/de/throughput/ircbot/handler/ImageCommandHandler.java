@@ -122,7 +122,9 @@ public class ImageCommandHandler implements CommandHandler {
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> processResponse(command, response, fImagePrompt, fImageTitle, fOriginalPrompt))
                 .exceptionally(e -> {
-                    command.respond("Error generating image: " + e.getMessage());
+                    String message = e.getMessage();
+                    message = message != null ? message.replaceAll("\n", " ") : "Unknown error";
+                    command.respond("Error generating image: " + message);
                     return null;
                 });
     }

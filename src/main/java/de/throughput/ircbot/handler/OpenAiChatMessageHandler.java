@@ -88,7 +88,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
         StringBuilder helpBuilder = new StringBuilder();
         Map<String, CommandHandler> handlers = applicationContext.getBeansOfType(CommandHandler.class);
         handlers.values().forEach(handler -> handler.getCommands().forEach(cmd -> {
-            if (Set.of("stock", "crypto", "aiimage", "weather").contains(cmd.getCommand())) {
+            if (Set.of("stock", "crypto", "aiimage", "weather", "remindme").contains(cmd.getCommand())) {
                 autoCommandHandlers.put(cmd.getCommand(), Pair.of(cmd, handler));
                 helpBuilder.append('!').append(cmd.getUsage()).append('\n');
             }
@@ -145,6 +145,9 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
                             "Executed command: " + commandLine)));
                     if (cmdOutput != null) {
                         contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.ASSISTANT.value(), cmdOutput)));
+                    } else {
+                        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.SYSTEM.value(),
+                                "(Command is taking longer, still ongoing)")));
                     }
                 }
 
