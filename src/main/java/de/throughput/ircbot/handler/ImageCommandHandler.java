@@ -188,7 +188,7 @@ public class ImageCommandHandler implements CommandHandler {
                 command.respond("Error generating image: " + response.statusCode());
             }
         } else {
-            command.respond("Error generating image: " + response.body());
+            command.respond("Error generating image: " + response.statusCode());
         }
     }
 }
