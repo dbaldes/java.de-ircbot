@@ -116,7 +116,7 @@ public class CryptoCommandHandler implements CommandHandler {
 
     private boolean isGribbleOnline() {
         return bot.getUserChannelDao().getAllUsers().stream()
-                .anyMatch(user -> user.getNick().equalsIgnoreCase("gribble"));
+                .anyMatch(user -> user.getNick().toLowerCase(Locale.ROOT).startsWith("gribble"));
     }
 
     private CmcLatestQuoteQuery toCmcQuery(String input) {
