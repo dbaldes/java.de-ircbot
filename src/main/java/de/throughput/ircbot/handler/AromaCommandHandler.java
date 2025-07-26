@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 
 /**
- * Command handler for generating wine aroma descriptions using an LLM.
+ * Command handler for generating aroma descriptions using an LLM.
  *
  * Usage: !aroma <description>
  */
@@ -16,7 +16,7 @@ import java.util.Set;
 public class AromaCommandHandler implements CommandHandler {
 
     private static final Command CMD_AROMA = new Command("aroma",
-            "aroma <description> - describe a wine taste based on a short hint");
+            "aroma <description> - generate an aroma description based on the given hint");
 
     private static final String PROMPT_TEMPLATE =
             "Beschreibe den Geschmack eines Weins, wie ein Weinkenner ihn beschreiben w\u00fcrde; " +

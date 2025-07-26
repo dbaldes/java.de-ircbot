@@ -85,7 +85,7 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 
 ### aroma
 - **Usage**: `!aroma <description>`
-- **Description**: Generates a wine aroma description from the given hint.
+- **Description**: Generates an aroma description based on the given hint.
 
 ### aireset
 - **Usage**: `!aireset`
