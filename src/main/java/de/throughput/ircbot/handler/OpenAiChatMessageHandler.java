@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -34,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +69,8 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     private String systemPrompt;
     private ApplicationContext applicationContext;
     private boolean commandsInitialized = false;
+    private Random random;
+    private byte[] nickObfuscationSalt;
 
     public OpenAiChatMessageHandler(
             OpenAiService openAiService,
@@ -74,6 +78,9 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
         this.openAiService = openAiService;
         this.systemPromptPath = systemPromptPath;
         readSystemPromptFromFile();
+        random = new Random(System.currentTimeMillis());
+        nickObfuscationSalt = new byte[8];
+        updateNickObfuscationSalt();
     }
 
     @Override
@@ -265,12 +272,10 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
         return promptMessages;
     }
 
-    private static String obfuscateNick(String nick) {
+    private String obfuscateNick(String nick) {
         try {
-            String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-
             MessageDigest instance = MessageDigest.getInstance("SHA-256");
-            instance.update(date.toString().getBytes());
+            instance.update(nickObfuscationSalt);
             instance.update(nick.getBytes());
 
             String hexString = Hex.encodeHexString(instance.digest());
@@ -279,6 +284,11 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
             return nick; // Fallback to original nick if hashing fails
         }
     }
+
+    private void updateNickObfuscationSalt() {
+        random.nextBytes(nickObfuscationSalt);
+    }
+
 
     /**
      * Generates a system prompt containing the current date and time.
@@ -302,6 +312,10 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
         contextMessages.removeIf(message -> message.getTimestamp().isBefore(twoHoursAgo));
         while (contextMessages.size() > MAX_CONTEXT_MESSAGES) {
             contextMessages.removeFirst();
+        }
+        if (contextMessages.isEmpty()) {
+            // Reset salt if context is empty
+            updateNickObfuscationSalt();
         }
     }
 
