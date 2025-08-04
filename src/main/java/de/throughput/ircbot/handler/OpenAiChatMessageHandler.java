@@ -197,8 +197,8 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
      */
     private String detectAutoCommand(LinkedList<TimedChatMessage> contextMessages, String nick, String message) {
         LinkedList<TimedChatMessage> copy = new LinkedList<>(contextMessages);
-        copy.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick)));
         pruneOldMessages(copy);
+        copy.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, obfuscateNick(nick))));
 
         List<ChatMessage> promptMessages = new ArrayList<>();
         promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
@@ -262,8 +262,8 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     private List<ChatMessage> createPromptMessages(LinkedList<TimedChatMessage> contextMessages, String channel, String nick, String message) {
         message += SHORT_ANSWER_HINT;
 
-        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, obfuscateNick(nick))));
         pruneOldMessages(contextMessages);
+        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, obfuscateNick(nick))));
 
         List<ChatMessage> promptMessages = new ArrayList<>();
         promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
@@ -310,7 +310,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     private void pruneOldMessages(LinkedList<TimedChatMessage> contextMessages) {
         LocalDateTime twoHoursAgo = LocalDateTime.now().minusHours(2);
         contextMessages.removeIf(message -> message.getTimestamp().isBefore(twoHoursAgo));
-        while (contextMessages.size() > MAX_CONTEXT_MESSAGES) {
+        while (contextMessages.size() >= MAX_CONTEXT_MESSAGES) {
             contextMessages.removeFirst();
         }
         if (contextMessages.isEmpty()) {
