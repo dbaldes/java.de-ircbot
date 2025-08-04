@@ -10,6 +10,7 @@ import de.throughput.ircbot.api.Command;
 import de.throughput.ircbot.api.CommandEvent;
 import de.throughput.ircbot.api.CommandHandler;
 import de.throughput.ircbot.api.MessageHandler;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -253,7 +255,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     private List<ChatMessage> createPromptMessages(LinkedList<TimedChatMessage> contextMessages, String channel, String nick, String message) {
         message += SHORT_ANSWER_HINT;
 
-        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, nick)));
+        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, obfuscateNick(nick))));
         pruneOldMessages(contextMessages);
 
         List<ChatMessage> promptMessages = new ArrayList<>();
@@ -261,6 +263,21 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
         promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
         promptMessages.addAll(contextMessages);
         return promptMessages;
+    }
+
+    private static String obfuscateNick(String nick) {
+        try {
+            String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+
+            MessageDigest instance = MessageDigest.getInstance("SHA-256");
+            instance.update(date.toString().getBytes());
+            instance.update(nick.getBytes());
+
+            String hexString = Hex.encodeHexString(instance.digest());
+            return "user-" + hexString.substring(0, 8);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            return nick; // Fallback to original nick if hashing fails
+        }
     }
 
     /**
