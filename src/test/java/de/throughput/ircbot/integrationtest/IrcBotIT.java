@@ -61,6 +61,15 @@ class IrcBotIT {
     }
 
     @Test
+    void testCalc() throws Exception {
+        synchronized (listener) {
+            listener.expectMessage(TESTBOT_NICK + ": 42");
+            bot.sendIRC().message(CHANNEL, "!calc 7*6");
+            assertThat(listener.waitForMessage()).isTrue();
+        }
+    }
+
+    @Test
     void testAircraft() throws Exception {
         synchronized (listener) {
             listener.expectMessage(TESTBOT_NICK + ": https://www.flightradar24.com/data/aircraft/HB-JVN");
