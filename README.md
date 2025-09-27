@@ -79,6 +79,10 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Usage**: `!flip <text>`
 - **Description**: Flips `<text>` over in rage.
 
+### calc
+- **Usage**: `!calc <expression>`
+- **Description**: Evaluates a mathematical expression and returns the result.
+
 ### lagerfeld
 - **Usage**: `!lagerfeld <text>`
 - **Description**: Responds with an AI-generated Karl Lagerfeld quote.
