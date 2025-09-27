@@ -1,7 +1,6 @@
 package de.throughput.ircbot.handler;
 
 import de.throughput.ircbot.IrcBotConfig;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -9,6 +8,7 @@ import org.pircbotx.Channel;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import javax.validation.constraints.NotNull;
 import java.util.Set;
 
 import static org.mockito.Mockito.*;
