@@ -74,13 +74,20 @@ public class LocalTimeCommandHandler implements CommandHandler {
             return Optional.empty();
         }
 
+        String upper = trimmed.toUpperCase(Locale.ROOT);
+        if (upper.startsWith("UTC") || upper.startsWith("GMT")) {
+            Optional<ZoneId> offset = parseOffset(trimmed.substring(3));
+            if (offset.isPresent()) {
+                return offset;
+            }
+        }
+
         try {
             return Optional.of(ZoneId.of(trimmed));
         } catch (DateTimeException ex) {
             // ignored
         }
 
-        String upper = trimmed.toUpperCase(Locale.ROOT);
         String shortId = ZoneId.SHORT_IDS.get(upper);
         if (shortId != null) {
             try {
@@ -90,13 +97,56 @@ public class LocalTimeCommandHandler implements CommandHandler {
             }
         }
 
-        if (upper.startsWith("UTC") || upper.startsWith("GMT")) {
-            String offsetPart = trimmed.substring(3);
-            if (offsetPart.isEmpty()) {
-                return Optional.of(ZoneOffset.UTC);
+        return Optional.empty();
+    }
+
+    private Optional<ZoneId> parseOffset(String rawOffset) {
+        String candidate = rawOffset.trim();
+        if (candidate.isEmpty() || candidate.equalsIgnoreCase("Z")) {
+            return Optional.of(ZoneOffset.UTC);
+        }
+
+        try {
+            return Optional.of(ZoneOffset.of(candidate));
+        } catch (DateTimeException ex) {
+            // ignored
+        }
+
+        if (candidate.matches("[+-]?\\d{1,2}")) {
+            int sign = 1;
+            int index = 0;
+            if (candidate.charAt(0) == '+') {
+                index = 1;
+            } else if (candidate.charAt(0) == '-') {
+                sign = -1;
+                index = 1;
             }
+            if (index >= candidate.length()) {
+                return Optional.empty();
+            }
+            int hours = Integer.parseInt(candidate.substring(index));
+            return Optional.of(ZoneOffset.ofHours(sign * hours));
+        }
+
+        if (candidate.matches("[+-]?\\d{3,4}")) {
+            int sign = 1;
+            int index = 0;
+            char first = candidate.charAt(0);
+            if (first == '+') {
+                index = 1;
+            } else if (first == '-') {
+                sign = -1;
+                index = 1;
+            }
+            String digits = candidate.substring(index);
+            if (digits.length() == 3) {
+                digits = "0" + digits;
+            }
+            String hours = digits.substring(0, 2);
+            String minutes = digits.substring(2);
+            String formatted = (sign < 0 ? "-" : "+") + hours + ":" + minutes;
             try {
-                return Optional.of(ZoneOffset.of(offsetPart));
+                return Optional.of(ZoneOffset.of(formatted));
             } catch (DateTimeException ex) {
                 // ignored
             }
