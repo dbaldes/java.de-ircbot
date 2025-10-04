@@ -61,12 +61,11 @@ public class ImageCommandHandler implements CommandHandler {
     private final long cooldownSeconds;
     private final ScheduledExecutorService scheduler;
     private final Object cooldownLock = new Object();
-    private Instant lastGenerationTimestamp = Instant.EPOCH;
     private Instant nextAvailableTime = Instant.EPOCH;
     private final Deque<ImageRequest> requestQueue = new ArrayDeque<>();
     private boolean queueWorkerScheduled = false;
 
-    private static final long COOLDOWN_BUFFER_SECONDS = 1;
+    private static final long COOLDOWN_BUFFER_SECONDS = 5;
 
     public ImageCommandHandler(
             SimpleAiService simpleAiService,
@@ -237,7 +236,6 @@ public class ImageCommandHandler implements CommandHandler {
     private void executeImageGeneration(CommandEvent command, String prompt) {
         Instant generationStart = Instant.now();
         synchronized (cooldownLock) {
-            lastGenerationTimestamp = generationStart;
             Instant potentialNext = generationStart.plusSeconds(cooldownSeconds);
             if (nextAvailableTime.isBefore(potentialNext)) {
                 nextAvailableTime = potentialNext;
