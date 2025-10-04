@@ -17,9 +17,16 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.Base64;
+import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Command handler for generating images using the Together.ai API.
@@ -47,20 +54,38 @@ public class ImageCommandHandler implements CommandHandler {
 
     public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell-Free";
 
+    private static final int MAX_QUEUE_SIZE = 5;
+
     private final SimpleAiService simpleAiService;
     private final String apiKey;
     private final String imageSaveDirectory;
     private final String imageUrlPrefix;
+    private final long cooldownSeconds;
+    private final ScheduledExecutorService scheduler;
+    private final Object cooldownLock = new Object();
+    private Instant nextAvailableTime = Instant.EPOCH;
+    private final Deque<ImageRequest> requestQueue = new ArrayDeque<>();
+    private boolean queueWorkerScheduled = false;
+
+    private static final long COOLDOWN_BUFFER_SECONDS = 5;
 
     public ImageCommandHandler(
             SimpleAiService simpleAiService,
             @Value("${together.apiKey}") String apiKey,
             @Value("${image.saveDirectory}") String imageSaveDirectory,
-            @Value("${image.urlPrefix}") String imageUrlPrefix) {
+            @Value("${image.urlPrefix}") String imageUrlPrefix,
+            @Value("${image.model.cooldown.seconds:100}") long cooldownSeconds) {
         this.simpleAiService = simpleAiService;
         this.apiKey = apiKey;
         this.imageSaveDirectory = imageSaveDirectory;
         this.imageUrlPrefix = imageUrlPrefix;
+        this.cooldownSeconds = cooldownSeconds;
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r);
+            thread.setDaemon(true);
+            thread.setName("image-command-handler");
+            return thread;
+        });
     }
 
     @Override
@@ -71,12 +96,166 @@ public class ImageCommandHandler implements CommandHandler {
     @Override
     public boolean onCommand(CommandEvent command) {
         command.getArgLine().ifPresentOrElse(
-                prompt -> generateImage(command, prompt),
+                prompt -> handleImageRequest(command, prompt),
                 () -> command.respond(command.getCommand().getUsage()));
         return true;
     }
 
-    private void generateImage(CommandEvent command, String prompt) {
+    private void handleImageRequest(CommandEvent command, String prompt) {
+        boolean executeImmediately = false;
+        long waitSeconds = 0;
+        boolean addedToQueue = false;
+        boolean queueFull = false;
+        ImageRequest targetRequest = null;
+        Instant now = Instant.now();
+
+        synchronized (cooldownLock) {
+            if (requestQueue.isEmpty() && !now.isBefore(nextAvailableTime)) {
+                executeImmediately = true;
+                nextAvailableTime = now.plusSeconds(cooldownSeconds);
+            } else {
+                String requestKey = createRequestKey(command, prompt);
+                targetRequest = findQueuedRequest(requestKey);
+                if (targetRequest == null) {
+                    if (requestQueue.size() >= MAX_QUEUE_SIZE) {
+                        queueFull = true;
+                    } else {
+                        Instant scheduledTime = calculateScheduledTimeForNewRequest(now);
+                        targetRequest = new ImageRequest(command, prompt, requestKey, scheduledTime);
+                        requestQueue.addLast(targetRequest);
+                        addedToQueue = true;
+                    }
+                }
+                if (!queueFull && !requestQueue.isEmpty() && !queueWorkerScheduled) {
+                    recalculateQueuedSchedule(now);
+                }
+                if (!queueFull && targetRequest != null) {
+                    waitSeconds = calculateWaitSeconds(now, targetRequest.getScheduledTime());
+                }
+            }
+        }
+
+        if (queueFull) {
+            command.respond("Image request queue is full. Please try again later.");
+            return;
+        }
+
+        if (executeImmediately) {
+            executeImageGeneration(command, prompt);
+            return;
+        }
+
+        command.respond("Image generation request will be executed in " + waitSeconds
+                + " seconds due to cooldown.");
+
+        if (addedToQueue) {
+            scheduleQueueWorker();
+        }
+    }
+
+    private String createRequestKey(CommandEvent commandEvent, String prompt) {
+        return commandEvent.getCommand().getCommand() + "|" + prompt;
+    }
+
+    private ImageRequest findQueuedRequest(String key) {
+        for (ImageRequest request : requestQueue) {
+            if (request.getKey().equals(key)) {
+                return request;
+            }
+        }
+        return null;
+    }
+
+    private Instant calculateScheduledTimeForNewRequest(Instant now) {
+        if (requestQueue.isEmpty()) {
+            if (now.isBefore(nextAvailableTime)) {
+                return nextAvailableTime.plusSeconds(COOLDOWN_BUFFER_SECONDS);
+            }
+            return now;
+        }
+        Instant lastScheduled = requestQueue.peekLast().getScheduledTime();
+        return lastScheduled
+                .plusSeconds(cooldownSeconds)
+                .plusSeconds(COOLDOWN_BUFFER_SECONDS);
+    }
+
+    private long calculateWaitSeconds(Instant now, Instant scheduledTime) {
+        long delayMillis = Math.max(0, Duration.between(now, scheduledTime).toMillis());
+        long waitSeconds = delayMillis / 1000;
+        if (delayMillis % 1000 != 0) {
+            waitSeconds += 1;
+        }
+        if (waitSeconds == 0) {
+            waitSeconds = 1;
+        }
+        return waitSeconds;
+    }
+
+    private void recalculateQueuedSchedule(Instant referenceTime) {
+        if (requestQueue.isEmpty()) {
+            return;
+        }
+        Instant scheduledTime = referenceTime;
+        if (referenceTime.isBefore(nextAvailableTime)) {
+            scheduledTime = nextAvailableTime.plusSeconds(COOLDOWN_BUFFER_SECONDS);
+        }
+        Instant nextStart = scheduledTime;
+        for (ImageRequest queued : requestQueue) {
+            queued.setScheduledTime(nextStart);
+            nextStart = nextStart
+                    .plusSeconds(cooldownSeconds)
+                    .plusSeconds(COOLDOWN_BUFFER_SECONDS);
+        }
+    }
+
+    private void scheduleQueueWorker() {
+        long delayMillis;
+        synchronized (cooldownLock) {
+            if (queueWorkerScheduled || requestQueue.isEmpty()) {
+                return;
+            }
+            ImageRequest nextRequest = requestQueue.peekFirst();
+            if (nextRequest == null) {
+                return;
+            }
+            delayMillis = Math.max(0, Duration.between(Instant.now(), nextRequest.getScheduledTime()).toMillis());
+            queueWorkerScheduled = true;
+        }
+
+        scheduler.schedule(this::processQueue, delayMillis, TimeUnit.MILLISECONDS);
+    }
+
+    private void processQueue() {
+        ImageRequest request;
+        synchronized (cooldownLock) {
+            request = requestQueue.pollFirst();
+            queueWorkerScheduled = false;
+        }
+
+        if (request == null) {
+            return;
+        }
+
+        executeImageGeneration(request.getCommandEvent(), request.getPrompt());
+
+        synchronized (cooldownLock) {
+            if (!requestQueue.isEmpty()) {
+                recalculateQueuedSchedule(Instant.now());
+            }
+        }
+
+        scheduleQueueWorker();
+    }
+
+    private void executeImageGeneration(CommandEvent command, String prompt) {
+        Instant generationStart = Instant.now();
+        synchronized (cooldownLock) {
+            Instant potentialNext = generationStart.plusSeconds(cooldownSeconds);
+            if (nextAvailableTime.isBefore(potentialNext)) {
+                nextAvailableTime = potentialNext;
+            }
+        }
+
         String imagePrompt = prompt;
         String title = null;
         // If requested, generate an image prompt using LLM
@@ -189,6 +368,40 @@ public class ImageCommandHandler implements CommandHandler {
             }
         } else {
             command.respond("Error generating image: " + response.statusCode());
+        }
+    }
+
+    private static class ImageRequest {
+        private final CommandEvent commandEvent;
+        private final String prompt;
+        private final String key;
+        private Instant scheduledTime;
+
+        ImageRequest(CommandEvent commandEvent, String prompt, String key, Instant scheduledTime) {
+            this.commandEvent = commandEvent;
+            this.prompt = prompt;
+            this.key = key;
+            this.scheduledTime = scheduledTime;
+        }
+
+        public CommandEvent getCommandEvent() {
+            return commandEvent;
+        }
+
+        public String getPrompt() {
+            return prompt;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public Instant getScheduledTime() {
+            return scheduledTime;
+        }
+
+        public void setScheduledTime(Instant scheduledTime) {
+            this.scheduledTime = scheduledTime;
         }
     }
 }
