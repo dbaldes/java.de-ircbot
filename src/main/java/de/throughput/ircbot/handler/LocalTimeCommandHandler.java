@@ -36,6 +36,7 @@ public class LocalTimeCommandHandler implements CommandHandler {
     private static final String GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/direct?q=%s&appid=%s";
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter ZONE_ONLY = DateTimeFormatter.ofPattern("zzzz (z)");
 
     private static final Map<String, ZoneId> NORMALIZED_ZONE_IDS;
 
@@ -171,8 +172,10 @@ public class LocalTimeCommandHandler implements CommandHandler {
     }
 
     private String formatResponse(ZoneId zoneId) {
-        String time = ZonedDateTime.now(zoneId).format(TIME_FORMATTER);
-        return "Current time in " + zoneId.getId() + ": " + time;
+        ZonedDateTime now = ZonedDateTime.now(zoneId);
+        String zone = now.format(ZONE_ONLY);
+        String time = now.format(TIME_FORMATTER);
+        return "Current time in %s: %s".formatted(zone, time);
     }
 
     private static class LocationResponse {
