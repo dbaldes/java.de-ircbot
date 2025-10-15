@@ -1,10 +1,11 @@
 package de.throughput.ircbot.handler;
 
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatCompletionResult;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.completion.chat.ChatMessageRole;
-import com.theokanning.openai.service.OpenAiService;
+import com.openai.client.OpenAIClient;
+import com.openai.models.ChatModel;
+import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionMessageParam;
+import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import de.throughput.ircbot.api.Command;
 import de.throughput.ircbot.api.CommandEvent;
 import de.throughput.ircbot.api.CommandHandler;
@@ -27,7 +28,7 @@ public class LagerfeldAiCommandHandler implements CommandHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(LagerfeldAiCommandHandler.class);
 
-    private static final String MODEL_GPT_3_5_TURBO = "gpt-3.5-turbo";
+    private static final ChatModel MODEL_GPT_3_5_TURBO = ChatModel.GPT_3_5_TURBO;
     private static final int MAX_TOKENS = 100;
 
     private static final Command CMD_AILAGERFELD = new Command("lagerfeld", "lagerfeld <text> - responds with an AI-generated Lagerfeld quote.");
@@ -44,7 +45,7 @@ public class LagerfeldAiCommandHandler implements CommandHandler {
                     Also los. Das Wort oder die Phrase lautet: "%s"
                     """;
 
-    private final OpenAiService openAiService;
+    private final OpenAIClient openAiClient;
 
     @Override
     public Set<Command> getCommands() {
@@ -64,21 +65,28 @@ public class LagerfeldAiCommandHandler implements CommandHandler {
         try {
             String prompt = PROMPT_TEMPLATE.replace("\n", " ").formatted(text);
 
-            var message = new ChatMessage(ChatMessageRole.USER.value(), prompt, command.getEvent().getUser().getNick());
-
-            var request = ChatCompletionRequest.builder()
-                    .model(MODEL_GPT_3_5_TURBO)
-                    .maxTokens(MAX_TOKENS)
-                    .messages(List.of(message))
+            ChatCompletionUserMessageParam userMessage = ChatCompletionUserMessageParam.builder()
+                    .content(prompt)
+                    .name(command.getEvent().getUser().getNick())
                     .build();
 
-            ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
+            ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
+                    .model(MODEL_GPT_3_5_TURBO)
+                    .maxCompletionTokens((long) MAX_TOKENS)
+                    .messages(List.of(ChatCompletionMessageParam.ofUser(userMessage)))
+                    .build();
 
-            ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
+            ChatCompletion completionResult = openAiClient.chat().completions().create(request);
+
+            String response = completionResult.choices()
+                    .stream()
+                    .findFirst()
+                    .flatMap(choice -> choice.message().content())
+                    .orElse("");
             command.getEvent()
                     .getChannel()
                     .send()
-                    .message("\"" + responseMessage.getContent() + "\" -- Karl Lagerfeld.");
+                    .message("\"" + response + "\" -- Karl Lagerfeld.");
         } catch (Exception e) {
             command.respond(e.getMessage());
             LOG.error(e.getMessage(), e);

@@ -1,9 +1,11 @@
 package de.throughput.ircbot.handler;
 
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatCompletionResult;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.service.OpenAiService;
+import com.openai.client.OpenAIClient;
+import com.openai.models.ChatModel;
+import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionMessageParam;
+import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,13 +20,13 @@ public class SimpleAiService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimpleAiService.class);
 
-    private static final String MODEL_NAME = "gpt-4o-mini";
+    private static final ChatModel MODEL = ChatModel.GPT_4O_MINI;
     private static final int MAX_TOKENS = 300;
 
-    private final OpenAiService openAiService;
+    private final OpenAIClient openAiClient;
 
-    public SimpleAiService(OpenAiService openAiService) {
-        this.openAiService = openAiService;
+    public SimpleAiService(OpenAIClient openAiClient) {
+        this.openAiClient = openAiClient;
     }
 
     /**
@@ -32,24 +34,23 @@ public class SimpleAiService {
      */
     public String query(String prompt) {
         try {
-            // Create a user message with the prompt
-            ChatMessage userMessage = new ChatMessage("user", prompt);
-
-            // Build the chat completion request
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(MODEL_NAME)
-                    .maxTokens(MAX_TOKENS)
-                    .messages(List.of(userMessage))
+            ChatCompletionUserMessageParam userMessage = ChatCompletionUserMessageParam.builder()
+                    .content(prompt)
                     .build();
 
-            // Send the request to OpenAI and get the result
-            ChatCompletionResult result = openAiService.createChatCompletion(request);
+            ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
+                    .model(MODEL)
+                    .maxCompletionTokens((long) MAX_TOKENS)
+                    .messages(List.of(ChatCompletionMessageParam.ofUser(userMessage)))
+                    .build();
 
-            // Extract the assistant's reply from the result
-            ChatMessage responseMessage = result.getChoices().get(0).getMessage();
+            ChatCompletion result = openAiClient.chat().completions().create(request);
 
-            // Return the content of the assistant's reply
-            return responseMessage.getContent();
+            return result.choices()
+                    .stream()
+                    .findFirst()
+                    .flatMap(choice -> choice.message().content())
+                    .orElse("");
 
         } catch (Exception e) {
             LOG.error(e.getMessage(), e);

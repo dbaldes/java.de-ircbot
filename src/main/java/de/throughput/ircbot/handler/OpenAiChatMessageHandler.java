@@ -1,11 +1,14 @@
 package de.throughput.ircbot.handler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatCompletionResult;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.completion.chat.ChatMessageRole;
-import com.theokanning.openai.service.OpenAiService;
+import com.openai.client.OpenAIClient;
+import com.openai.models.ChatModel;
+import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.models.chat.completions.ChatCompletionMessageParam;
+import com.openai.models.chat.completions.ChatCompletionSystemMessageParam;
+import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import de.throughput.ircbot.api.Command;
 import de.throughput.ircbot.api.CommandEvent;
 import de.throughput.ircbot.api.CommandHandler;
@@ -23,7 +26,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -54,7 +56,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
             "aireset - deletes the current context for the channel and reloads the system prompt from the file system."
             , true);
 
-    private static final String MODEL_NAME = "gpt-4o-mini";
+    private static final ChatModel MODEL = ChatModel.GPT_4O_MINI;
     private static final int MAX_CONTEXT_MESSAGES = 20;
     private static final int MAX_TOKENS = 100;
     private static final int MAX_IRC_MESSAGE_LENGTH = 420;
@@ -62,7 +64,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
 
     private final Map<String, LinkedList<TimedChatMessage>> contextMessagesPerChannel = new ConcurrentHashMap<>();
 
-    private final OpenAiService openAiService;
+    private final OpenAIClient openAiClient;
     private final Path systemPromptPath;
     private final Map<String, Pair<Command, CommandHandler>> autoCommandHandlers = new ConcurrentHashMap<>();
     private String autoCommandHelp = "";
@@ -73,9 +75,9 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     private byte[] nickObfuscationSalt;
 
     public OpenAiChatMessageHandler(
-            OpenAiService openAiService,
+            OpenAIClient openAiClient,
             @Value("${openai.systemPrompt.path}") Path systemPromptPath) {
-        this.openAiService = openAiService;
+        this.openAiClient = openAiClient;
         this.systemPromptPath = systemPromptPath;
         readSystemPromptFromFile();
         random = new Random(System.currentTimeMillis());
@@ -138,17 +140,24 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
 
     private void sendChatCompletion(MessageEvent event, LinkedList<TimedChatMessage> contextMessages,
                                     String channel, String nick, String message) {
-        var request = ChatCompletionRequest.builder()
-                .model(MODEL_NAME)
-                .maxTokens(MAX_TOKENS)
+        ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
+                .model(MODEL)
+                .maxCompletionTokens((long) MAX_TOKENS)
                 .messages(createPromptMessages(contextMessages, channel, nick, message))
                 .build();
 
-        ChatCompletionResult completionResult = openAiService.createChatCompletion(request);
+        ChatCompletion completion = openAiClient.chat().completions().create(request);
 
-        ChatMessage responseMessage = completionResult.getChoices().get(0).getMessage();
-        contextMessages.add(new TimedChatMessage(responseMessage));
-        event.respond(sanitizeResponse(responseMessage.getContent()));
+        var responseChoice = completion.choices().stream().findFirst();
+        if (responseChoice.isEmpty()) {
+            event.respond("Tja. (no response)");
+            return;
+        }
+
+        ChatCompletionMessage responseMessage = responseChoice.get().message();
+        contextMessages.add(new TimedChatMessage(
+                ChatCompletionMessageParam.ofAssistant(responseMessage.toParam())));
+        event.respond(sanitizeResponse(responseMessage.content().orElse("")));
     }
 
     /**
@@ -187,17 +196,30 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     /**
      * Creates the list of prompt messages for the OpenAI API call.
      */
-    private List<ChatMessage> createPromptMessages(LinkedList<TimedChatMessage> contextMessages, String channel, String nick, String message) {
-        message += SHORT_ANSWER_HINT;
+    private List<ChatCompletionMessageParam> createPromptMessages(LinkedList<TimedChatMessage> contextMessages,
+                                                                  String channel, String nick, String message) {
+        String augmentedMessage = message + SHORT_ANSWER_HINT;
 
         pruneOldMessages(contextMessages);
-        contextMessages.add(new TimedChatMessage(new ChatMessage(ChatMessageRole.USER.value(), message, obfuscateNick(nick))));
+        contextMessages.add(new TimedChatMessage(createUserMessage(augmentedMessage, nick)));
 
-        List<ChatMessage> promptMessages = new ArrayList<>();
-        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
-        promptMessages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getDatePrompt()));
-        promptMessages.addAll(contextMessages);
+        List<ChatCompletionMessageParam> promptMessages = new ArrayList<>();
+        promptMessages.add(ChatCompletionMessageParam.ofSystem(
+                ChatCompletionSystemMessageParam.builder().content(systemPrompt).build()));
+        promptMessages.add(ChatCompletionMessageParam.ofSystem(
+                ChatCompletionSystemMessageParam.builder().content(getDatePrompt()).build()));
+        for (TimedChatMessage timedMessage : contextMessages) {
+            promptMessages.add(timedMessage.message());
+        }
         return promptMessages;
+    }
+
+    private ChatCompletionMessageParam createUserMessage(String message, String nick) {
+        return ChatCompletionMessageParam.ofUser(
+                ChatCompletionUserMessageParam.builder()
+                        .content(message)
+                        .name(obfuscateNick(nick))
+                        .build());
     }
 
     private String obfuscateNick(String nick) {
@@ -293,15 +315,20 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     }
 
     /**
-     * Adds a timestamp to ChatMessage, allowing us to drop old messages from the context.
+     * Adds a timestamp to chat messages, allowing us to drop old messages from the context.
      */
-    private static class TimedChatMessage extends ChatMessage {
+    private static class TimedChatMessage {
 
+        private final ChatCompletionMessageParam message;
         private final LocalDateTime timestamp;
 
-        public TimedChatMessage(ChatMessage chatMessage) {
-            super(chatMessage.getRole(), chatMessage.getContent(), chatMessage.getName());
+        public TimedChatMessage(ChatCompletionMessageParam message) {
+            this.message = message;
             this.timestamp = LocalDateTime.now();
+        }
+
+        public ChatCompletionMessageParam message() {
+            return message;
         }
 
         @JsonIgnore
