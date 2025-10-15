@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
  * Reponds to messages directed at the bot, using the OpenAI API.
  */
 @Component
-public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler, ApplicationContextAware {
+public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatMessageHandler.class);
 
@@ -66,11 +66,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
 
     private final OpenAIClient openAiClient;
     private final Path systemPromptPath;
-    private final Map<String, Pair<Command, CommandHandler>> autoCommandHandlers = new ConcurrentHashMap<>();
-    private String autoCommandHelp = "";
     private String systemPrompt;
-    private ApplicationContext applicationContext;
-    private boolean commandsInitialized = false;
     private Random random;
     private byte[] nickObfuscationSalt;
 
@@ -84,12 +80,6 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
         nickObfuscationSalt = new byte[8];
         updateNickObfuscationSalt();
     }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
-
 
     @Override
     public Set<Command> getCommands() {
@@ -142,7 +132,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
                                     String channel, String nick, String message) {
         ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
                 .model(MODEL)
-                .maxCompletionTokens((long) MAX_TOKENS)
+                .maxCompletionTokens(MAX_TOKENS)
                 .messages(createPromptMessages(contextMessages, channel, nick, message))
                 .build();
 
@@ -166,31 +156,6 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     private static String sanitizeResponse(String content) {
         String trim = content.replaceAll("\\s+", " ").trim();
         return trim.length() > MAX_IRC_MESSAGE_LENGTH ? trim.substring(0, MAX_IRC_MESSAGE_LENGTH) : trim;
-    }
-
-    /**
-     * Executes the given command line using the registered command handlers.
-     */
-    private String executeCommand(MessageEvent event, String commandLine) {
-        String[] parts = commandLine.substring(1).split("\\s+", 2);
-        String cmdName = parts[0];
-        String argLine = parts.length > 1 ? parts[1] : null;
-
-        Pair<Command, CommandHandler> handlerPair = autoCommandHandlers.get(cmdName);
-        if (handlerPair == null) {
-            return null;
-        }
-
-        RecordingCommandEvent cmdEvent = new RecordingCommandEvent(event, handlerPair.getLeft(), "!",
-                java.util.Optional.ofNullable(argLine));
-        handlerPair.getRight().onCommand(cmdEvent);
-
-        try {
-            return cmdEvent.getResponse().get(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            LOG.warn("timed out waiting for command response", e);
-            return null;
-        }
     }
 
     /**
@@ -287,31 +252,6 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler,
     @Override
     public boolean isOnlyTalkChannels() {
         return true;
-    }
-
-    /**
-     * CommandEvent that captures the first response for inclusion in the chat context.
-     */
-    private static class RecordingCommandEvent extends CommandEvent {
-
-        private final CompletableFuture<String> response = new CompletableFuture<>();
-
-        public RecordingCommandEvent(MessageEvent event, Command command, String commandPrefix,
-                                     java.util.Optional<String> argLine) {
-            super(event, command, commandPrefix, argLine);
-        }
-
-        @Override
-        public void respond(String answer) {
-            if (!response.isDone()) {
-                response.complete(answer);
-            }
-            super.respond(answer);
-        }
-
-        public CompletableFuture<String> getResponse() {
-            return response;
-        }
     }
 
     /**
