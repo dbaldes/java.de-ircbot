@@ -2,7 +2,8 @@ package de.throughput.ircbot;
 
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeRequestInitializer;
-import com.theokanning.openai.service.OpenAiService;
+import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
@@ -126,8 +127,11 @@ public class IrcBotMain {
     }
 
     @Bean
-    public OpenAiService openAiService(@Value("${openai.apiKey}") String apiKey) {
-        return new OpenAiService(apiKey, Duration.ofSeconds(20));
+    public OpenAIClient openAiClient(@Value("${openai.apiKey}") String apiKey) {
+        return OpenAIOkHttpClient.builder()
+                .apiKey(apiKey)
+                .timeout(Duration.ofSeconds(20))
+                .build();
     }
 
     private static String getVersion() {
