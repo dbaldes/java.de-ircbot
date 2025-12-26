@@ -52,7 +52,7 @@ public class ImageCommandHandler implements CommandHandler {
             Prompt: "%s"
             """;
 
-    public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell-Free";
+    public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell";
 
     private static final int MAX_QUEUE_SIZE = 5;
 
