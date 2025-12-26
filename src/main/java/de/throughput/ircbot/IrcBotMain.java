@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.UtilSSLSocketFactory;
+import org.pircbotx.cap.SASLCapHandler;
 import org.pircbotx.cap.TLSCapHandler;
 import org.pircbotx.delay.StaticDelay;
 import org.pircbotx.hooks.ListenerAdapter;
@@ -80,6 +81,10 @@ public class IrcBotMain {
                         event.getBot().sendIRC().mode(event.getBot().getNick(), "-c");
                     }
                 });
+
+        if (!botConfig.isTestMode()) {
+            config.addCapHandler(new SASLCapHandler(botConfig.getNick(), botConfig.getNickservPassword()));
+        }
 
         if (botConfig.isSsl() || botConfig.isTls()) {
             SSLSocketFactory socketFactory = null;
