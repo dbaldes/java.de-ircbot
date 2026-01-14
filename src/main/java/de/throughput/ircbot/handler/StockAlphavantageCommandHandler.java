@@ -39,6 +39,9 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
     private static final BigDecimal ONE_HUNDREDTH = new BigDecimal("0.01");
     private static final BigDecimal ONE_TENHOUSANDTH = new BigDecimal("0.0001");
     private static final String DEFAULT_CURRENCY = "USD";
+    private static final long RATE_LIMIT_INTERVAL_MS = 1_000L;
+    private static final Object RATE_LIMIT_LOCK = new Object();
+    private static long nextAllowedRequestTimeMs = 0L;
 
     private static final Command CMD_STOCK = new Command("stock", "stock <symbols> - get price information on stock symbols. example: !stock AMD");
 
@@ -127,6 +130,7 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
     }
 
     private CompletableFuture<StockQuote> getStockQuote(String symbol) {
+        awaitRateLimit();
         URI uri = URI.create(String.format(API_URL_STOCK_QUOTE, symbol, apiKey));
 
         HttpRequest request = HttpRequest.newBuilder(uri)
@@ -137,6 +141,23 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
         return HttpClient.newHttpClient()
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(this::processStockQuoteResponse);
+    }
+
+    private static void awaitRateLimit() {
+        long delayMs;
+        synchronized (RATE_LIMIT_LOCK) {
+            long now = System.currentTimeMillis();
+            long scheduled = Math.max(now, nextAllowedRequestTimeMs);
+            nextAllowedRequestTimeMs = scheduled + RATE_LIMIT_INTERVAL_MS;
+            delayMs = scheduled - now;
+        }
+        if (delayMs > 0L) {
+            try {
+                Thread.sleep(delayMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private StockQuote processStockQuoteResponse(HttpResponse<String> httpResponse) {
