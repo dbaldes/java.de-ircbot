@@ -39,7 +39,7 @@ public class StockAlphavantageCommandHandler implements CommandHandler {
     private static final BigDecimal ONE_HUNDREDTH = new BigDecimal("0.01");
     private static final BigDecimal ONE_TENHOUSANDTH = new BigDecimal("0.0001");
     private static final String DEFAULT_CURRENCY = "USD";
-    private static final long RATE_LIMIT_INTERVAL_MS = 1_000L;
+    private static final long RATE_LIMIT_INTERVAL_MS = 1_100L;
     private static final Object RATE_LIMIT_LOCK = new Object();
     private static long nextAllowedRequestTimeMs = 0L;
 
