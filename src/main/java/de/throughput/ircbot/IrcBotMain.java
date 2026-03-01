@@ -24,6 +24,7 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Properties;
 
 @SpringBootApplication
@@ -57,7 +58,12 @@ public class IrcBotMain {
     @Bean
     Configuration botConfig(IrcBotConfig botConfig, IrcBotControlListener cmdListener, IrcBotConversationListener convListener,
             AdminCommandRunner adminCommandRunner) {
-        validate(botConfig);
+        List<String> channels = configuredChannels(botConfig);
+        validate(botConfig, channels);
+
+        boolean hasNickservPassword = StringUtils.isNotBlank(botConfig.getNickservPassword());
+        boolean useSaslAuth = !botConfig.isTestMode() && hasNickservPassword;
+        boolean delayAutoJoinUntilNickservAuth = !useSaslAuth && hasNickservPassword;
 
         Configuration.Builder config = new Configuration.Builder().setAutoNickChange(true)
                 .setAutoReconnect(true)
@@ -71,8 +77,8 @@ public class IrcBotMain {
                 .setName(botConfig.getNick())
                 .setLogin(botConfig.getNick())
                 .setNickservPassword(botConfig.getNickservPassword())
-                .addAutoJoinChannels(botConfig.getChannels())
-                .setNickservDelayJoin(true);
+                .addAutoJoinChannels(channels)
+                .setNickservDelayJoin(delayAutoJoinUntilNickservAuth);
 
                 config.getListenerManager().addListener(new ListenerAdapter() {
                     @Override
@@ -82,7 +88,7 @@ public class IrcBotMain {
                     }
                 });
 
-        if (!botConfig.isTestMode()) {
+        if (useSaslAuth) {
             config.addCapHandler(new SASLCapHandler(botConfig.getNick(), botConfig.getNickservPassword()));
         }
 
@@ -108,19 +114,30 @@ public class IrcBotMain {
      *
      * @param botConfig config
      */
-    private void validate(IrcBotConfig botConfig) {
+    private void validate(IrcBotConfig botConfig, List<String> channels) {
         if (StringUtils.isEmpty(botConfig.getServer())) {
             throw new IllegalArgumentException("must give a server");
         }
         if (StringUtils.isEmpty(botConfig.getNick())) {
             throw new IllegalArgumentException("must give a nick");
         }
-        if (botConfig.getChannels() == null || botConfig.getChannels().isEmpty()) {
+        if (channels.isEmpty()) {
             throw new IllegalArgumentException("must give one or more channels");
         }
         if (botConfig.isSsl() && botConfig.isTls()) {
             throw new IllegalArgumentException("choose one of SSL or TLS");
         }
+    }
+
+    private List<String> configuredChannels(IrcBotConfig botConfig) {
+        if (botConfig.getChannels() == null) {
+            return List.of();
+        }
+        return botConfig.getChannels()
+                .stream()
+                .map(String::trim)
+                .filter(StringUtils::isNotEmpty)
+                .toList();
     }
 
     @Bean
