@@ -39,22 +39,6 @@ This list is not exhaustive.
 Commands can start with either `!` or `*`. Commands can be abbreviated by just using one or more of its
 starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambiguous, the bot will tell you.
 
-### avherald
-- **Usage**: `!avherald <search query>`
-- **Description**: Searches for aviation incidents on The Aviation Herald.
-
-### flight
-- **Usage**: `!flight <flight number>`
-- **Description**: Provides links to flight tracking information for the specified flight number.
-
-### aircraft
-- **Usage**: `!aircraft <registration>`
-- **Description**: Provides a link to flight tracking information for the specified aircraft registration.
-
-### airport
-- **Usage**: `!airport <IATA or ICAO code>`
-- **Description**: Provides links to information about the specified airport.
-
 ### ath
 - **Usage**: `!ath [<id>]`
 - **Description**: Shows the all-time-high of a cryptocurrency by CoinGecko ID (defaults to bitcoin) in USD and EUR with dates.
@@ -162,4 +146,3 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-

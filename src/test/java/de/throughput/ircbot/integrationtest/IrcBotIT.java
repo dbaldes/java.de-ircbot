@@ -70,48 +70,6 @@ class IrcBotIT {
     }
 
     @Test
-    void testAircraft() throws Exception {
-        synchronized (listener) {
-            listener.expectMessage(TESTBOT_NICK + ": https://www.flightradar24.com/data/aircraft/HB-JVN");
-            bot.sendIRC().message(CHANNEL, "!aircraft HB-JVN");
-            assertThat(listener.waitForMessage()).isTrue();
-        }
-    }
-
-    @Test
-    void testAirport() throws Exception {
-        synchronized (listener) {
-            listener.expectMessage(TESTBOT_NICK + ": https://flightaware.com/live/airport/CNX - https://www.flightradar24.com/airport/CNX");
-            bot.sendIRC().message(CHANNEL, "!airport CNX");
-            assertThat(listener.waitForMessage()).isTrue();
-
-            listener.expectMessage(TESTBOT_NICK + ": https://flightaware.com/live/airport/LSZH");
-            bot.sendIRC().message(CHANNEL, "!airport LSZH");
-            assertThat(listener.waitForMessage()).isTrue();
-        }
-    }
-
-    @Test
-    void testAvherald() throws Exception {
-        synchronized (listener) {
-            listener.expectMessage(TESTBOT_NICK + ": https://avherald.com/h?");
-            bot.sendIRC().message(CHANNEL, "!avherald searchterm");
-            assertThat(listener.waitForMessage()).isTrue();
-
-            assertThat(listener.getLastMessage()).contains("search_term=searchterm");
-        }
-    }
-
-    @Test
-    void testFlight() throws Exception {
-        synchronized (listener) {
-            listener.expectMessage(TESTBOT_NICK + ": https://flightaware.com/live/flight/TG970 - https://www.flightradar24.com/data/flights/TG970");
-            bot.sendIRC().message(CHANNEL, "!flight TG970");
-            assertThat(listener.waitForMessage()).isTrue();
-        }
-    }
-
-    @Test
     void testFlip() throws Exception {
         synchronized (listener) {
             listener.expectMessage("(╯°□°）╯ ︵ ˙ƃop ʎzɐן ǝɥʇ ɹǝʌo sdɯnɾ xoɟ uʍoɹq ʞɔᴉnb ǝɥ┴");
