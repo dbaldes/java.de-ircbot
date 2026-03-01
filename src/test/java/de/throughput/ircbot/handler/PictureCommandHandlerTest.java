@@ -66,7 +66,7 @@ class PictureCommandHandlerTest {
         ArgumentCaptor<String> aiPromptCaptor = ArgumentCaptor.forClass(String.class);
         verify(simpleAiService).query(aiPromptCaptor.capture());
         verify(imageCommandHandler).enqueueImageGeneration(eq(commandEvent), promptCaptor.capture(), eq(false));
-        assertThat(aiPromptCaptor.getValue()).contains("Input word: \"alice\"");
+        assertThat(aiPromptCaptor.getValue()).contains("Subject name: \"alice\"");
         assertThat(aiPromptCaptor.getValue()).contains("alice is wearing a red hat");
         assertThat(aiPromptCaptor.getValue()).contains("alice are standing near a bicycle");
         assertThat(promptCaptor.getValue()).contains("realistic portrait of Alice");

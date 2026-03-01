@@ -18,18 +18,28 @@ public class PictureCommandHandler implements CommandHandler {
     private static final Command CMD_PICTURE = new Command("picture",
             "picture <word> - generate an image from what the bot knows about a factoid");
     private static final String PICTURE_PROMPT_TEMPLATE = """
-            You are creating a final prompt for the image generation model FLUX.1-schnell.
-            Input word: "%s"
+            You write high-quality prompts for FLUX.1-schnell.
+
+            Subject name: "%s"
             Known factoids:
             %s
 
-            Task:
-            - Treat the input word as a person name.
-            - Translate any German content to natural English.
-            - Produce one vivid, concrete, descriptive English prompt for a realistic scene.
-            - Incorporate all meaningful traits, objects, and circumstances from the factoids.
-            - Keep the prompt suitable for FLUX.1-schnell, under 500 characters.
-            - Reply with only the final image prompt.
+            Build exactly one final English prompt for image generation.
+
+            Requirements:
+            - Always depict the subject as a person.
+            - Translate all German or mixed-language content to natural English before composing the prompt.
+            - Preserve the meaning of every relevant factoid detail.
+            - Integrate traits, clothing, actions, objects, background, mood, and circumstances into one coherent scene.
+            - Prefer concrete visual details over abstract words.
+            - Include composition and camera hints (e.g. portrait/full body, angle, focal length feel) when helpful.
+            - Include lighting and color palette details when helpful.
+            - Include material/texture details when relevant.
+            - Keep the prompt realistic unless the factoids clearly imply a different style.
+            - Avoid contradictions and duplicated statements.
+            - Do not include meta text, labels, bullet points, JSON, or markdown.
+            - Do not mention "factoid", "translation", or instructions.
+            - Return only the final prompt text.
             """;
 
     private final JdbcTemplate jdbc;
