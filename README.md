@@ -135,6 +135,10 @@ starting letters, e.g. `!cr` instead of `!crypto`. If the short command is ambig
 - **Usage**: `!aiimage <prompt>`
 - **Description**: Generates an image prompt using AI, then creates an image from it.
 
+### picture
+- **Usage**: `!picture <word>`
+- **Description**: Generates an image from known factoids about `<word>`, or says it cannot imagine it when none are known.
+
 ### weather
 - **Usage** `!weather <location>`
 - **Description**: Gets current weather information for a given location.

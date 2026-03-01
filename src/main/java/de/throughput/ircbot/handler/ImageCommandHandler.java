@@ -96,12 +96,16 @@ public class ImageCommandHandler implements CommandHandler {
     @Override
     public boolean onCommand(CommandEvent command) {
         command.getArgLine().ifPresentOrElse(
-                prompt -> handleImageRequest(command, prompt),
+                prompt -> handleImageRequest(command, prompt, CMD_AIIMAGE.equals(command.getCommand())),
                 () -> command.respond(command.getCommand().getUsage()));
         return true;
     }
 
-    private void handleImageRequest(CommandEvent command, String prompt) {
+    void enqueueImageGeneration(CommandEvent command, String prompt, boolean useAiEnhancement) {
+        handleImageRequest(command, prompt, useAiEnhancement);
+    }
+
+    private void handleImageRequest(CommandEvent command, String prompt, boolean useAiEnhancement) {
         boolean executeImmediately = false;
         long waitSeconds = 0;
         boolean addedToQueue = false;
@@ -121,7 +125,7 @@ public class ImageCommandHandler implements CommandHandler {
                         queueFull = true;
                     } else {
                         Instant scheduledTime = calculateScheduledTimeForNewRequest(now);
-                        targetRequest = new ImageRequest(command, prompt, requestKey, scheduledTime);
+                        targetRequest = new ImageRequest(command, prompt, requestKey, scheduledTime, useAiEnhancement);
                         requestQueue.addLast(targetRequest);
                         addedToQueue = true;
                     }
@@ -141,7 +145,7 @@ public class ImageCommandHandler implements CommandHandler {
         }
 
         if (executeImmediately) {
-            executeImageGeneration(command, prompt);
+            executeImageGeneration(command, prompt, useAiEnhancement);
             return;
         }
 
@@ -236,7 +240,7 @@ public class ImageCommandHandler implements CommandHandler {
             return;
         }
 
-        executeImageGeneration(request.getCommandEvent(), request.getPrompt());
+        executeImageGeneration(request.getCommandEvent(), request.getPrompt(), request.isUseAiEnhancement());
 
         synchronized (cooldownLock) {
             if (!requestQueue.isEmpty()) {
@@ -247,7 +251,7 @@ public class ImageCommandHandler implements CommandHandler {
         scheduleQueueWorker();
     }
 
-    private void executeImageGeneration(CommandEvent command, String prompt) {
+    private void executeImageGeneration(CommandEvent command, String prompt, boolean useAiEnhancement) {
         Instant generationStart = Instant.now();
         synchronized (cooldownLock) {
             Instant potentialNext = generationStart.plusSeconds(cooldownSeconds);
@@ -259,7 +263,7 @@ public class ImageCommandHandler implements CommandHandler {
         String imagePrompt = prompt;
         String title = null;
         // If requested, generate an image prompt using LLM
-        if (CMD_AIIMAGE.equals(command.getCommand())) {
+        if (useAiEnhancement) {
             String llmPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt);
             imagePrompt = simpleAiService.query(llmPrompt);
             String titlePrompt = AI_IMAGE_TITLE_TEMPLATE.replace("\n", " ").formatted(prompt + ": " + imagePrompt);
@@ -375,13 +379,15 @@ public class ImageCommandHandler implements CommandHandler {
         private final CommandEvent commandEvent;
         private final String prompt;
         private final String key;
+        private final boolean useAiEnhancement;
         private Instant scheduledTime;
 
-        ImageRequest(CommandEvent commandEvent, String prompt, String key, Instant scheduledTime) {
+        ImageRequest(CommandEvent commandEvent, String prompt, String key, Instant scheduledTime, boolean useAiEnhancement) {
             this.commandEvent = commandEvent;
             this.prompt = prompt;
             this.key = key;
             this.scheduledTime = scheduledTime;
+            this.useAiEnhancement = useAiEnhancement;
         }
 
         public CommandEvent getCommandEvent() {
@@ -398,6 +404,10 @@ public class ImageCommandHandler implements CommandHandler {
 
         public Instant getScheduledTime() {
             return scheduledTime;
+        }
+
+        public boolean isUseAiEnhancement() {
+            return useAiEnhancement;
         }
 
         public void setScheduledTime(Instant scheduledTime) {
