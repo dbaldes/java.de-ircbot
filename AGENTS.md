@@ -17,3 +17,8 @@ Common types:
 - `test`: test additions or changes
 - `docs`: documentation-only changes
 - `chore`: maintenance tasks
+
+## Commit and Push Workflow
+
+- Always create a commit for completed code changes without asking.
+- Do not push commits unless explicitly asked by the user.
