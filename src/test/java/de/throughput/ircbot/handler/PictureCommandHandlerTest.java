@@ -25,13 +25,15 @@ class PictureCommandHandlerTest {
 
     private JdbcTemplate jdbc;
     private ImageCommandHandler imageCommandHandler;
+    private SimpleAiService simpleAiService;
     private PictureCommandHandler handler;
 
     @BeforeEach
     void setup() {
         jdbc = Mockito.mock(JdbcTemplate.class);
         imageCommandHandler = Mockito.mock(ImageCommandHandler.class);
-        handler = new PictureCommandHandler(jdbc, imageCommandHandler);
+        simpleAiService = Mockito.mock(SimpleAiService.class);
+        handler = new PictureCommandHandler(jdbc, imageCommandHandler, simpleAiService);
     }
 
     @Test
@@ -55,15 +57,19 @@ class PictureCommandHandlerTest {
                         Map.of("verb", "is", "fact", "wearing a red hat"),
                         Map.of("verb", "are", "fact", "standing near a bicycle")
                 ));
+        when(simpleAiService.query(anyString())).thenReturn("A realistic portrait of Alice with a red hat next to a bicycle");
 
         CommandEvent commandEvent = mockCommandEvent(event, "alice");
         handler.onCommand(commandEvent);
 
         ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-        verify(imageCommandHandler).enqueueImageGeneration(eq(commandEvent), promptCaptor.capture(), eq(true));
-        assertThat(promptCaptor.getValue()).contains("person named 'alice'");
-        assertThat(promptCaptor.getValue()).contains("alice is wearing a red hat");
-        assertThat(promptCaptor.getValue()).contains("alice are standing near a bicycle");
+        ArgumentCaptor<String> aiPromptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(simpleAiService).query(aiPromptCaptor.capture());
+        verify(imageCommandHandler).enqueueImageGeneration(eq(commandEvent), promptCaptor.capture(), eq(false));
+        assertThat(aiPromptCaptor.getValue()).contains("Input word: \"alice\"");
+        assertThat(aiPromptCaptor.getValue()).contains("alice is wearing a red hat");
+        assertThat(aiPromptCaptor.getValue()).contains("alice are standing near a bicycle");
+        assertThat(promptCaptor.getValue()).contains("realistic portrait of Alice");
     }
 
     private static MessageEvent mockMessageEvent() {

@@ -17,13 +17,29 @@ public class PictureCommandHandler implements CommandHandler {
 
     private static final Command CMD_PICTURE = new Command("picture",
             "picture <word> - generate an image from what the bot knows about a factoid");
+    private static final String PICTURE_PROMPT_TEMPLATE = """
+            You are creating a final prompt for the image generation model FLUX.1-schnell.
+            Input word: "%s"
+            Known factoids:
+            %s
+
+            Task:
+            - Treat the input word as a person name.
+            - Translate any German content to natural English.
+            - Produce one vivid, concrete, descriptive English prompt for a realistic scene.
+            - Incorporate all meaningful traits, objects, and circumstances from the factoids.
+            - Keep the prompt suitable for FLUX.1-schnell, under 500 characters.
+            - Reply with only the final image prompt.
+            """;
 
     private final JdbcTemplate jdbc;
     private final ImageCommandHandler imageCommandHandler;
+    private final SimpleAiService simpleAiService;
 
-    public PictureCommandHandler(JdbcTemplate jdbc, ImageCommandHandler imageCommandHandler) {
+    public PictureCommandHandler(JdbcTemplate jdbc, ImageCommandHandler imageCommandHandler, SimpleAiService simpleAiService) {
         this.jdbc = jdbc;
         this.imageCommandHandler = imageCommandHandler;
+        this.simpleAiService = simpleAiService;
     }
 
     @Override
@@ -60,7 +76,12 @@ public class PictureCommandHandler implements CommandHandler {
                 + "If facts mention objects or circumstances, include those elements in the scene.")
                 .formatted(word, knowledge);
 
-        imageCommandHandler.enqueueImageGeneration(command, prompt, true);
+        String refinedPrompt = simpleAiService.query(PICTURE_PROMPT_TEMPLATE.formatted(word, knowledge)).trim();
+        if (refinedPrompt.isEmpty()) {
+            refinedPrompt = prompt;
+        }
+
+        imageCommandHandler.enqueueImageGeneration(command, refinedPrompt, false);
     }
 
     private Map<String, String> loadFactoidsByVerb(String key) {
