@@ -280,8 +280,8 @@ public class ImageCommandHandler implements CommandHandler {
         Map<String, Object> requestBody = Map.of(
                 "model", MODEL_NAME,
                 "prompt", imagePrompt,
-                "width", 1024,
-                "height", 768,
+                "width", 1536,
+                "height", 1024,
                 "n", 1,
                 "response_format", "b64_json"
         );
