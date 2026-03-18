@@ -282,7 +282,6 @@ public class ImageCommandHandler implements CommandHandler {
                 "prompt", imagePrompt,
                 "width", 1024,
                 "height", 768,
-                "steps", 4,
                 "n", 1,
                 "response_format", "b64_json"
         );
