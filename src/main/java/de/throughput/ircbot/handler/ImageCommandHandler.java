@@ -40,7 +40,7 @@ public class ImageCommandHandler implements CommandHandler {
     private static final String API_URL = "https://api.together.xyz/v1/images/generations";
 
     private static final String AI_IMAGE_PROMPT_TEMPLATE = """
-            Based on this input: "%s", create a prompt for the image generation model openai/gpt-image-1.5
+            Based on this input: "%s", create a prompt for the image generation model FLUX.1 [schnell]
             that includes subject, material i.e. medium or rendering style, artistic style, artist influence, details
             such as sharpness, color, lighting and additional elements in under 500 characters and in concise, natural,
             descriptive language, not as a list of those properties. The prompt shall not repeat the input, and it shall not
@@ -52,7 +52,7 @@ public class ImageCommandHandler implements CommandHandler {
             Prompt: "%s"
             """;
 
-    public static final String MODEL_NAME = "openai/gpt-image-1.5";
+    public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell";
 
     private static final int MAX_QUEUE_SIZE = 5;
 
@@ -280,8 +280,9 @@ public class ImageCommandHandler implements CommandHandler {
         Map<String, Object> requestBody = Map.of(
                 "model", MODEL_NAME,
                 "prompt", imagePrompt,
-                "width", 1536,
-                "height", 1024,
+                "width", 1024,
+                "height", 768,
+                "steps", 4,
                 "n", 1,
                 "response_format", "b64_json"
         );
