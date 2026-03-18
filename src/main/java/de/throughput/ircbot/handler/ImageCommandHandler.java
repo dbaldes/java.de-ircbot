@@ -61,6 +61,7 @@ public class ImageCommandHandler implements CommandHandler {
     private final String imageSaveDirectory;
     private final String imageUrlPrefix;
     private final long cooldownSeconds;
+    private final int imageModelSteps;
     private final ScheduledExecutorService scheduler;
     private final Object cooldownLock = new Object();
     private Instant nextAvailableTime = Instant.EPOCH;
@@ -74,12 +75,14 @@ public class ImageCommandHandler implements CommandHandler {
             @Value("${together.apiKey}") String apiKey,
             @Value("${image.saveDirectory}") String imageSaveDirectory,
             @Value("${image.urlPrefix}") String imageUrlPrefix,
-            @Value("${image.model.cooldown.seconds:100}") long cooldownSeconds) {
+            @Value("${image.model.cooldown.seconds:100}") long cooldownSeconds,
+            @Value("${image.model.steps:6}") int imageModelSteps) {
         this.simpleAiService = simpleAiService;
         this.apiKey = apiKey;
         this.imageSaveDirectory = imageSaveDirectory;
         this.imageUrlPrefix = imageUrlPrefix;
         this.cooldownSeconds = cooldownSeconds;
+        this.imageModelSteps = imageModelSteps;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread thread = new Thread(r);
             thread.setDaemon(true);
@@ -282,7 +285,7 @@ public class ImageCommandHandler implements CommandHandler {
                 "prompt", imagePrompt,
                 "width", 1024,
                 "height", 768,
-                "steps", 4,
+                "steps", imageModelSteps,
                 "n", 1,
                 "response_format", "b64_json"
         );
