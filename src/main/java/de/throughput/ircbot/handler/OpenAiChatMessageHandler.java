@@ -3,6 +3,7 @@ package de.throughput.ircbot.handler;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.openai.client.OpenAIClient;
 import com.openai.models.ChatModel;
+import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
@@ -58,7 +59,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
 
     private static final ChatModel MODEL = ChatModel.GPT_5_MINI;
     private static final int MAX_CONTEXT_MESSAGES = 20;
-    private static final int MAX_TOKENS = 100;
+    private static final int MAX_TOKENS = 500;
     private static final int MAX_IRC_MESSAGE_LENGTH = 420;
     private static final String SHORT_ANSWER_HINT = " (Antwort auf 200 Zeichen begrenzen)";
 
@@ -133,6 +134,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
                 .model(MODEL)
                 .maxCompletionTokens(MAX_TOKENS)
+                .reasoningEffort(ReasoningEffort.MINIMAL)
                 .messages(createPromptMessages(contextMessages, channel, nick, message))
                 .build();
 
@@ -145,9 +147,14 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         }
 
         ChatCompletionMessage responseMessage = responseChoice.get().message();
+        String response = sanitizeResponse(responseMessage.content().orElse(""));
+        if (response.isEmpty()) {
+            event.respond("Tja. (no response)");
+            return;
+        }
         contextMessages.add(new TimedChatMessage(
                 ChatCompletionMessageParam.ofAssistant(responseMessage.toParam())));
-        event.respond(sanitizeResponse(responseMessage.content().orElse("")));
+        event.respond(response);
     }
 
     /**

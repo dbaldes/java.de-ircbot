@@ -2,6 +2,7 @@ package de.throughput.ircbot.handler;
 
 import com.openai.client.OpenAIClient;
 import com.openai.models.ChatModel;
+import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
@@ -21,7 +22,7 @@ public class SimpleAiService {
     private static final Logger LOG = LoggerFactory.getLogger(SimpleAiService.class);
 
     private static final ChatModel MODEL = ChatModel.GPT_5_MINI;
-    private static final int MAX_TOKENS = 300;
+    private static final int MAX_TOKENS = 500;
 
     private final OpenAIClient openAiClient;
 
@@ -41,6 +42,7 @@ public class SimpleAiService {
             ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
                     .model(MODEL)
                     .maxCompletionTokens((long) MAX_TOKENS)
+                    .reasoningEffort(ReasoningEffort.MINIMAL)
                     .messages(List.of(ChatCompletionMessageParam.ofUser(userMessage)))
                     .build();
 
