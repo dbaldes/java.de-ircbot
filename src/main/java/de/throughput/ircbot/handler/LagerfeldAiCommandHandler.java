@@ -28,7 +28,7 @@ public class LagerfeldAiCommandHandler implements CommandHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(LagerfeldAiCommandHandler.class);
 
-    private static final ChatModel MODEL_GPT_3_5_TURBO = ChatModel.GPT_3_5_TURBO;
+    private static final ChatModel MODEL = ChatModel.GPT_5_MINI;
     private static final int MAX_TOKENS = 100;
 
     private static final Command CMD_AILAGERFELD = new Command("lagerfeld", "lagerfeld <text> - responds with an AI-generated Lagerfeld quote.");
@@ -71,7 +71,7 @@ public class LagerfeldAiCommandHandler implements CommandHandler {
                     .build();
 
             ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
-                    .model(MODEL_GPT_3_5_TURBO)
+                    .model(MODEL)
                     .maxCompletionTokens((long) MAX_TOKENS)
                     .messages(List.of(ChatCompletionMessageParam.ofUser(userMessage)))
                     .build();
