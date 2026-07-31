@@ -21,7 +21,7 @@ public class SimpleAiService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimpleAiService.class);
 
-    private static final ChatModel MODEL = ChatModel.GPT_5_MINI;
+    private static final ChatModel MODEL = ChatModel.of("gpt-5.6-luna");
     private static final int MAX_TOKENS = 500;
 
     private final OpenAIClient openAiClient;

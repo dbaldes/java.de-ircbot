@@ -29,7 +29,7 @@ public class LagerfeldAiCommandHandler implements CommandHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(LagerfeldAiCommandHandler.class);
 
-    private static final ChatModel MODEL = ChatModel.GPT_5_MINI;
+    private static final ChatModel MODEL = ChatModel.of("gpt-5.6-luna");
     private static final int MAX_TOKENS = 500;
 
     private static final Command CMD_AILAGERFELD = new Command("lagerfeld", "lagerfeld <text> - responds with an AI-generated Lagerfeld quote.");
