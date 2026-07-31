@@ -74,7 +74,7 @@ public class LagerfeldAiCommandHandler implements CommandHandler {
             ChatCompletionCreateParams request = ChatCompletionCreateParams.builder()
                     .model(MODEL)
                     .maxCompletionTokens((long) MAX_TOKENS)
-                    .reasoningEffort(ReasoningEffort.MINIMAL)
+                    .reasoningEffort(ReasoningEffort.NONE)
                     .messages(List.of(ChatCompletionMessageParam.ofUser(userMessage)))
                     .build();
 
