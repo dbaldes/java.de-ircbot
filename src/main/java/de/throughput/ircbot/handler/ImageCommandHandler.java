@@ -40,7 +40,7 @@ public class ImageCommandHandler implements CommandHandler {
     private static final String API_URL = "https://api.together.xyz/v1/images/generations";
 
     private static final String AI_IMAGE_PROMPT_TEMPLATE = """
-            Based on this input: "%s", create a prompt for the image generation model FLUX.1 [schnell]
+            Based on this input: "%s", create a prompt for the image generation model %s
             that includes subject, material i.e. medium or rendering style, artistic style, artist influence, details
             such as sharpness, color, lighting and additional elements in under 500 characters and in concise, natural,
             descriptive language, not as a list of those properties. The prompt shall not repeat the input, and it shall not
@@ -52,16 +52,14 @@ public class ImageCommandHandler implements CommandHandler {
             Prompt: "%s"
             """;
 
-    public static final String MODEL_NAME = "black-forest-labs/FLUX.1-schnell";
-
     private static final int MAX_QUEUE_SIZE = 5;
 
     private final SimpleAiService simpleAiService;
     private final String apiKey;
     private final String imageSaveDirectory;
     private final String imageUrlPrefix;
+    private final String imageModelName;
     private final long cooldownSeconds;
-    private final int imageModelSteps;
     private final ScheduledExecutorService scheduler;
     private final Object cooldownLock = new Object();
     private Instant nextAvailableTime = Instant.EPOCH;
@@ -75,14 +73,14 @@ public class ImageCommandHandler implements CommandHandler {
             @Value("${together.apiKey}") String apiKey,
             @Value("${image.saveDirectory}") String imageSaveDirectory,
             @Value("${image.urlPrefix}") String imageUrlPrefix,
-            @Value("${image.model.cooldown.seconds:100}") long cooldownSeconds,
-            @Value("${image.model.steps:6}") int imageModelSteps) {
+            @Value("${image.model.name:Qwen/Qwen-Image}") String imageModelName,
+            @Value("${image.model.cooldown.seconds:100}") long cooldownSeconds) {
         this.simpleAiService = simpleAiService;
         this.apiKey = apiKey;
         this.imageSaveDirectory = imageSaveDirectory;
         this.imageUrlPrefix = imageUrlPrefix;
+        this.imageModelName = imageModelName;
         this.cooldownSeconds = cooldownSeconds;
-        this.imageModelSteps = imageModelSteps;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread thread = new Thread(r);
             thread.setDaemon(true);
@@ -267,7 +265,7 @@ public class ImageCommandHandler implements CommandHandler {
         String title = null;
         // If requested, generate an image prompt using LLM
         if (useAiEnhancement) {
-            String llmPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt);
+            String llmPrompt = AI_IMAGE_PROMPT_TEMPLATE.replace("\n", " ").formatted(prompt, imageModelName);
             imagePrompt = simpleAiService.query(llmPrompt);
             String titlePrompt = AI_IMAGE_TITLE_TEMPLATE.replace("\n", " ").formatted(prompt + ": " + imagePrompt);
             title = simpleAiService.query(titlePrompt);
@@ -279,16 +277,7 @@ public class ImageCommandHandler implements CommandHandler {
             title = title.replaceAll("^\"|\"$", "");
         }
 
-        // Build the JSON request body
-        Map<String, Object> requestBody = Map.of(
-                "model", MODEL_NAME,
-                "prompt", imagePrompt,
-                "width", 1024,
-                "height", 768,
-                "steps", imageModelSteps,
-                "n", 1,
-                "response_format", "b64_json"
-        );
+        Map<String, Object> requestBody = createImageRequestBody(imagePrompt);
 
         Gson gson = new Gson();
         String json = gson.toJson(requestBody);
@@ -313,6 +302,17 @@ public class ImageCommandHandler implements CommandHandler {
                     command.respond("Error generating image: " + message);
                     return null;
                 });
+    }
+
+    Map<String, Object> createImageRequestBody(String prompt) {
+        return Map.of(
+                "model", imageModelName,
+                "prompt", prompt,
+                "width", 1024,
+                "height", 768,
+                "n", 1,
+                "response_format", "base64"
+        );
     }
 
     private void processResponse(CommandEvent command, HttpResponse<String> response, String imagePrompt, String imageTitle, String originalPrompt) {
