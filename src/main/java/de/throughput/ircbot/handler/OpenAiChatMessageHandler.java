@@ -149,10 +149,20 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     }
 
     /**
-     * Sanitizes the response by removing excessive whitespace and limiting the length.
+     * Converts Markdown responses to IRC-safe plain text and limits their length.
      */
-    private static String sanitizeResponse(String content) {
-        String trim = content.replaceAll("\\s+", " ").trim();
+    static String sanitizeResponse(String content) {
+        String plainText = content
+                .replaceAll("!\\[([^]]*)]\\([^)]*\\)", "$1")
+                .replaceAll("\\[([^]]+)]\\(([^)]*)\\)", "$1 ($2)")
+                .replaceAll("`([^`]*)`", "$1")
+                .replace("**", "")
+                .replace("__", "")
+                .replace("~~", "")
+                .replaceAll("(?m)^\\s{0,3}#{1,6}\\s+", "")
+                .replaceAll("(?m)^\\s*>\\s?", "")
+                .replaceAll("(?m)^\\s*(?:[-*+]\\s+|\\d+[.)]\\s+)", "");
+        String trim = plainText.replaceAll("\\s+", " ").trim();
         return trim.length() > MAX_IRC_MESSAGE_LENGTH ? trim.substring(0, MAX_IRC_MESSAGE_LENGTH) : trim;
     }
 
