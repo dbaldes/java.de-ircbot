@@ -9,6 +9,7 @@ import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ActionEvent;
 import org.pircbotx.hooks.events.MessageEvent;
 
+import java.sql.DriverManager;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
@@ -82,12 +83,14 @@ class IrcBotIT {
     void testFactoid() throws Exception {
         synchronized (listener) {
             bot.sendIRC().message(CHANNEL, "time is of the essence.");
+            assertThat(waitForFactoid("time", "is", "of the essence.")).isTrue();
 
             listener.expectMessage(TESTBOT_NICK + ": time is of the essence.");
             bot.sendIRC().message(CHANNEL, "time.");
             assertThat(listener.waitForMessage()).isTrue();
 
             bot.sendIRC().message(CHANNEL, "time is also money.");
+            assertThat(waitForFactoid("time", "is", "of the essence. or money.")).isTrue();
             listener.expectMessage(TESTBOT_NICK + ": time is of the essence. or money.");
             bot.sendIRC().message(CHANNEL, "time.");
             assertThat(listener.waitForMessage()).isTrue();
@@ -138,6 +141,7 @@ class IrcBotIT {
             listener.expectMessage(TESTBOT_NICK + ": Of course, comrade!");
             bot.sendIRC().message(CHANNEL, "!addslogan code and conquer!");
             assertThat(listener.waitForMessage()).isTrue();
+            assertThat(waitForSlogan("code and conquer!")).isTrue();
 
             listener.expectMessage(TESTBOT_NICK + ": I know, comrade, I know!");
             bot.sendIRC().message(CHANNEL, "!addslogan code and conquer!");
@@ -155,6 +159,45 @@ class IrcBotIT {
             bot.sendIRC().message(CHANNEL, "!rmslogan code and conquer!");
             assertThat(listener.waitForMessage()).isTrue();
         }
+    }
+
+    private static boolean waitForFactoid(String key, String verb, String fact) throws Exception {
+        long deadline = System.currentTimeMillis() + 2000;
+        while (System.currentTimeMillis() < deadline) {
+            try (var connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/ircbot", "ircbot", "ircbot");
+                    var statement = connection.prepareStatement(
+                            "SELECT 1 FROM factoid WHERE key = ? AND verb = ? AND fact = ?")) {
+                statement.setString(1, key);
+                statement.setString(2, verb);
+                statement.setString(3, fact);
+                try (var result = statement.executeQuery()) {
+                    if (result.next()) {
+                        return true;
+                    }
+                }
+            }
+            Thread.sleep(50);
+        }
+        return false;
+    }
+
+    private static boolean waitForSlogan(String slogan) throws Exception {
+        long deadline = System.currentTimeMillis() + 2000;
+        while (System.currentTimeMillis() < deadline) {
+            try (var connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/ircbot", "ircbot", "ircbot");
+                    var statement = connection.prepareStatement(
+                            "SELECT 1 FROM slogan WHERE channel = ? AND slogan = ?")) {
+                statement.setString(1, CHANNEL);
+                statement.setString(2, slogan);
+                try (var result = statement.executeQuery()) {
+                    if (result.next()) {
+                        return true;
+                    }
+                }
+            }
+            Thread.sleep(50);
+        }
+        return false;
     }
 
     @Getter
