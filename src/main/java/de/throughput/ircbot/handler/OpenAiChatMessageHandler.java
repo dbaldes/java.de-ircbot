@@ -135,6 +135,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
                 .model(MODEL)
                 .maxCompletionTokens(MAX_TOKENS)
                 .reasoningEffort(ReasoningEffort.NONE)
+                .webSearchOptions(ChatCompletionCreateParams.WebSearchOptions.builder().build())
                 .messages(createPromptMessages(contextMessages, channel, nick, message))
                 .build();
 
