@@ -8,6 +8,8 @@ import de.throughput.ircbot.api.CommandHandler;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -15,7 +17,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,9 +36,17 @@ public class WeatherCommandHandler implements CommandHandler {
     private static final String WEATHER_URL = "http://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&units=imperial&appid=%s";
 
     private final String apiKey;
+    private final JdbcTemplate jdbc;
+    private final HttpClient httpClient;
 
-    public WeatherCommandHandler(@Value("${openweathermap.apiKey}") String apiKey) {
+    public WeatherCommandHandler(@Value("${openweathermap.apiKey}") String apiKey, JdbcTemplate jdbc) {
+        this(apiKey, jdbc, HttpClient.newHttpClient());
+    }
+
+    WeatherCommandHandler(String apiKey, JdbcTemplate jdbc, HttpClient httpClient) {
         this.apiKey = apiKey;
+        this.jdbc = jdbc;
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -44,20 +56,55 @@ public class WeatherCommandHandler implements CommandHandler {
 
     @Override
     public boolean onCommand(CommandEvent command) {
-        command.getArgLine().ifPresentOrElse(
-                location -> getWeatherInfo(command, location),
-                () -> command.respond(command.getCommand().getUsage())
-        );
+        command.getArgLine()
+                .map(String::trim)
+                .filter(location -> !location.isEmpty())
+                .ifPresentOrElse(
+                        location -> getWeatherInfo(command, location, true),
+                        () -> lookupLastLocation(command)
+                                .ifPresentOrElse(
+                                        location -> getWeatherInfo(command, location, false),
+                                        () -> command.respond("No weather location stored for you in this channel. Use !weather <location> first.")
+                                )
+                );
         return true;
     }
 
-    private void getWeatherInfo(CommandEvent command, String location) {
+    private void getWeatherInfo(CommandEvent command, String location, boolean storeLocation) {
         getLocation(location).thenCompose(response -> {
             if (response == null) {
                 return CompletableFuture.completedFuture("Location not found");
             }
+            if (storeLocation) {
+                storeLastLocation(command, location);
+            }
             return getWeather(response);
         }).thenAccept(command::respond);
+    }
+
+    private Optional<String> lookupLastLocation(CommandEvent command) {
+        try {
+            return Optional.of(jdbc.queryForObject(
+                    "SELECT location FROM weather_location WHERE channel = ? AND nick = ?",
+                    String.class,
+                    channel(command), nick(command)));
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    private void storeLastLocation(CommandEvent command, String location) {
+        jdbc.update("INSERT INTO weather_location (channel, nick, location) VALUES (?, ?, ?) "
+                        + "ON CONFLICT (channel, nick) DO UPDATE SET location = EXCLUDED.location",
+                channel(command), nick(command), location);
+    }
+
+    private String channel(CommandEvent command) {
+        return command.getEvent().getChannel().getName().toLowerCase(Locale.ROOT);
+    }
+
+    private String nick(CommandEvent command) {
+        return command.getEvent().getUser().getNick().toLowerCase(Locale.ROOT);
     }
 
     private CompletableFuture<LocationResponse> getLocation(String location) {
@@ -67,7 +114,7 @@ public class WeatherCommandHandler implements CommandHandler {
                 .GET()
                 .build();
 
-        return HttpClient.newHttpClient()
+        return httpClient
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(this::processGeocodingResponse);
     }
@@ -87,7 +134,7 @@ public class WeatherCommandHandler implements CommandHandler {
                 .GET()
                 .build();
 
-        return HttpClient.newHttpClient()
+        return httpClient
                 .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> processWeatherResponse(location, response));
     }
