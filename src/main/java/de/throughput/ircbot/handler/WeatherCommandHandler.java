@@ -8,6 +8,7 @@ import de.throughput.ircbot.api.CommandHandler;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,7 @@ public class WeatherCommandHandler implements CommandHandler {
     private final JdbcTemplate jdbc;
     private final HttpClient httpClient;
 
+    @Autowired
     public WeatherCommandHandler(@Value("${openweathermap.apiKey}") String apiKey, JdbcTemplate jdbc) {
         this(apiKey, jdbc, HttpClient.newHttpClient());
     }
