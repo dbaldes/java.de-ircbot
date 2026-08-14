@@ -153,6 +153,8 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
      */
     static String sanitizeResponse(String content) {
         String plainText = content
+                .replaceAll("([?&])utm_source=openai&", "$1")
+                .replaceAll("[?&]utm_source=openai(?=($|[\\s)\\]}>.,!?#]))", "")
                 .replaceAll("!\\[([^]]*)]\\([^)]*\\)", "$1")
                 .replaceAll("\\[([^]]+)]\\(([^)]*)\\)", "$1 ($2)")
                 .replaceAll("`([^`]*)`", "$1")
