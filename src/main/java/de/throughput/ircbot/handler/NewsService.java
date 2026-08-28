@@ -33,9 +33,11 @@ public class NewsService {
     private final Path goodNewsCachePath;
 
     public NewsService(@Value("${news.cache.path}") Path newsCachePath,
-                       @Value("${goodnews.cache.path}") Path goodNewsCachePath) {
+                       @Value("${goodnews.cache.path:}") String goodNewsCachePath) {
         this.newsCachePath = newsCachePath;
-        this.goodNewsCachePath = goodNewsCachePath;
+        this.goodNewsCachePath = goodNewsCachePath.isBlank()
+                ? newsCachePath.resolveSibling("goodnews.cache")
+                : Path.of(goodNewsCachePath);
     }
 
     public synchronized String getNews() {
