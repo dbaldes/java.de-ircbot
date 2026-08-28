@@ -1,0 +1,24 @@
+{
+  "feeds": [
+    {
+      "title": "NASA",
+      "category": "space and science",
+      "feed_url": "https://www.nasa.gov/rss/dyn/breaking_news.rss"
+    },
+    {
+      "title": "European Space Agency",
+      "category": "space and science",
+      "feed_url": "https://www.esa.int/rssfeed/Our_Activities/Space_Science"
+    },
+    {
+      "title": "MIT News",
+      "category": "research and innovation",
+      "feed_url": "https://news.mit.edu/rss/feed"
+    },
+    {
+      "title": "ScienceDaily",
+      "category": "science research",
+      "feed_url": "https://www.sciencedaily.com/rss/top/science.xml"
+    }
+  ]
+}
