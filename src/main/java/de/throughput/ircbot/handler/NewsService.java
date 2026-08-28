@@ -32,12 +32,12 @@ public class NewsService {
     private final Path newsCachePath;
     private final Path goodNewsCachePath;
 
-    public NewsService(@Value("${news.cache.path}") Path newsCachePath,
+    public NewsService(@Value("${news.cache.path:}") String newsCachePath,
                        @Value("${goodnews.cache.path:}") String goodNewsCachePath) {
-        this.newsCachePath = newsCachePath;
-        this.goodNewsCachePath = goodNewsCachePath.isBlank()
-                ? newsCachePath.resolveSibling("goodnews.cache")
-                : Path.of(goodNewsCachePath);
+        this.newsCachePath = cachePath(newsCachePath, "news.cache");
+        this.goodNewsCachePath = goodNewsCachePath == null || goodNewsCachePath.isBlank()
+                ? this.newsCachePath.resolveSibling("goodnews.cache")
+                : cachePath(goodNewsCachePath, "goodnews.cache");
     }
 
     public synchronized String getNews() {
@@ -115,6 +115,13 @@ public class NewsService {
 
     private static boolean isPositiveCandidate(String text) {
         return !NEGATIVE_KEYWORDS.matcher(text).find() && POSITIVE_KEYWORDS.matcher(text).find();
+    }
+
+    private static Path cachePath(String configuredPath, String defaultFilename) {
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return Path.of(System.getProperty("java.io.tmpdir"), defaultFilename);
+        }
+        return Path.of(configuredPath);
     }
 
     private static String stripHtmlTags(String html) {
