@@ -34,7 +34,7 @@ public class HtmlTitleUrlProcessor {
             URI uri = URI.create(url);
             String title = Jsoup.connect(url)
                     .userAgent(MOZILLA_USER_AGENT)
-                    .header("Accept-Language", "en-US, en;q=0.9, *;q=0.5")
+                    .header("Accept-Language", "de, en;q=0.9")
                     .maxBodySize(MAX_BODY_SIZE_512K)
                     .timeout(READ_TIMEOUT_MS)
                     .get()

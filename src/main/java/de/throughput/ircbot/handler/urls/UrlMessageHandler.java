@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.pircbotx.hooks.events.MessageEvent;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -25,6 +26,9 @@ public class UrlMessageHandler implements MessageHandler {
     public boolean onMessage(MessageEvent event) {
         UrlParser.streamUrls(event.getMessage())
                 .forEach(urlString -> {
+                    if (isGoogleMapsUrl(urlString)) {
+                        return;
+                    }
                     if (botConfig.getTalkChannels()
                             .contains(event.getChannel()
                                     .getName())) {
@@ -51,5 +55,23 @@ public class UrlMessageHandler implements MessageHandler {
     @Override
     public boolean isOnlyTalkChannels() {
         return false;
+    }
+
+    private static boolean isGoogleMapsUrl(String urlString) {
+        try {
+            URI uri = URI.create(urlString);
+            String host = uri.getHost();
+            if (host == null) {
+                return false;
+            }
+            host = host.toLowerCase(java.util.Locale.ROOT);
+            return host.equals("maps.app.goo.gl")
+                    || host.startsWith("maps.google.")
+                    || ((host.equals("google.com") || host.endsWith(".google.com"))
+                            && uri.getPath() != null
+                            && uri.getPath().toLowerCase().startsWith("/maps"));
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }
