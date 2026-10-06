@@ -14,11 +14,11 @@ import de.throughput.ircbot.api.MessageHandler;
 public class InOrdnungBringenMessageHandler implements MessageHandler {
 
     private static final Pattern ATTACK_PHRASE = Pattern.compile(
-            "\\bder\\s+angri(?:f{1,2})\\s+(.+?)\\s+"
-                    + "(?:wird|wird\\s+schon|soll)\\s+"
+            "\\b(?:der\\s+angri(?:f{1,2})\\s+|mit\\s+dem\\s+angri(?:f{1,2})\\s+)(.+?)\\s+"
+                    + "(?:wird|soll)\\s+"
                     + "(?:(?:das|alles|das\\s+alles)\\s+)?"
                     + "(?:schon\\s+)?(?:wieder\\s+)?"
-                    + "(?:in\\s+ordnung\\s+bringen|richten|ins\\s+lot\\s+bringen)\\b[.!?]*",
+                    + "(?:in\\s+ordnung\\s+(?:bringen|kommen)|richten|ins\\s+lot\\s+bringen)\\b[.!?]*",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
     private static final List<String> RESPONSES = List.of(
