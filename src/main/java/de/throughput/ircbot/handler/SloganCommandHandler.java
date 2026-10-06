@@ -57,16 +57,19 @@ public class SloganCommandHandler implements CommandHandler {
     private final IrcBotConfig botConfig;
     private final JdbcTemplate jdbc;
     private final PircBotX bot;
+    private final OpenAiChatMessageHandler chatMessageHandler;
     private final Random rnd = new Random();
 
     private long lastSloganTimestampEpochMillis = 0L;
 
     @Autowired
-    public SloganCommandHandler(IrcBotConfig botConfig, JdbcTemplate jdbc, @Lazy PircBotX bot) {
+    public SloganCommandHandler(IrcBotConfig botConfig, JdbcTemplate jdbc, @Lazy PircBotX bot,
+                                OpenAiChatMessageHandler chatMessageHandler) {
         super();
         this.botConfig = botConfig;
         this.jdbc = jdbc;
         this.bot = bot;
+        this.chatMessageHandler = chatMessageHandler;
     }
 
     @Override
@@ -192,7 +195,10 @@ public class SloganCommandHandler implements CommandHandler {
             readActiveTalkChannels().forEach(channel -> {
                 if (rnd.nextFloat() <= P_RANDOM_SLOGAN) {
                     lastSloganTimestampEpochMillis = currentTimeEpochMillis;
-                    lookupRandomSlogan(channel).ifPresent(slogan -> bot.send().message(channel, slogan));
+                    lookupRandomSlogan(channel).ifPresent(slogan -> {
+                        bot.send().message(channel, slogan);
+                        chatMessageHandler.addIdea(channel, slogan);
+                    });
                 }
             });
         }

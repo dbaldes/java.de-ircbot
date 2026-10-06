@@ -61,6 +61,7 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
     private static final String SHORT_ANSWER_HINT = " (Antwort auf 200 Zeichen begrenzen)";
 
     private final Map<String, LinkedList<TimedChatMessage>> contextMessagesPerChannel = new ConcurrentHashMap<>();
+    private final Map<String, LinkedList<TimedChatMessage>> ideasPerChannel = new ConcurrentHashMap<>();
 
     private final OpenAIClient openAiClient;
     private final Path systemPromptPath;
@@ -104,6 +105,22 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         readSystemPromptFromFile();
         command.respond("system prompt reloaded. context reset complete.");
         return true;
+    }
+
+    /**
+     * Makes a spontaneously posted slogan available as an idea in future chat context.
+     * The model should only mention it when asked, and should treat it as its own thought.
+     */
+    public void addIdea(String channel, String idea) {
+        LinkedList<TimedChatMessage> ideas = ideasPerChannel.computeIfAbsent(channel, k -> new LinkedList<>());
+        synchronized (ideas) {
+            pruneOldMessages(ideas);
+            ideas.add(new TimedChatMessage(createMessage(EasyInputMessage.Role.SYSTEM,
+                    "A thought that just came to your mind (do not bring it up unless asked): " + idea)));
+            while (ideas.size() > MAX_CONTEXT_MESSAGES) {
+                ideas.removeFirst();
+            }
+        }
     }
 
     /**
@@ -181,6 +198,15 @@ public class OpenAiChatMessageHandler implements MessageHandler, CommandHandler 
         List<ResponseInputItem> promptMessages = new ArrayList<>();
         promptMessages.add(createMessage(EasyInputMessage.Role.SYSTEM, systemPrompt));
         promptMessages.add(createMessage(EasyInputMessage.Role.SYSTEM, getDatePrompt()));
+        LinkedList<TimedChatMessage> ideas = ideasPerChannel.get(channel);
+        if (ideas != null) {
+            synchronized (ideas) {
+                pruneOldMessages(ideas);
+                for (TimedChatMessage idea : ideas) {
+                    promptMessages.add(idea.message());
+                }
+            }
+        }
         for (TimedChatMessage timedMessage : contextMessages) {
             promptMessages.add(timedMessage.message());
         }
