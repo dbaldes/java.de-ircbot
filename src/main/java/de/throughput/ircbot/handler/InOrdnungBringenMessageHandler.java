@@ -13,6 +13,8 @@ import de.throughput.ircbot.api.MessageHandler;
 @Component
 public class InOrdnungBringenMessageHandler implements MessageHandler {
 
+    private static final int MESSAGE_DELAY_MILLIS = 2_000;
+
     private static final Pattern ATTACK_PHRASE = Pattern.compile(
             "\\b(?:der\\s+angri(?:f{1,2})\\s+|mit\\s+dem\\s+angri(?:f{1,2})\\s+)(.+?)\\s+"
                     + "(?:wird|soll)\\s+"
@@ -24,7 +26,7 @@ public class InOrdnungBringenMessageHandler implements MessageHandler {
     private static final List<String> RESPONSES = List.of(
             "Mein Führer ... %1$s ... der Angriff %1$s ist nicht erfolgt.",
             "%1$s ... mein Führer, der Angriff %1$s ist nicht erfolgt.",
-            "Mein Führer, der Angriff %s ist leider nicht erfolgt.");
+            "Mein Führer, der Angriff %s ist nicht erfolgt.");
 
     @Override
     public boolean isOnlyTalkChannels() {
@@ -44,7 +46,12 @@ public class InOrdnungBringenMessageHandler implements MessageHandler {
         }
 
         String response = RESPONSES.get(ThreadLocalRandom.current().nextInt(RESPONSES.size()));
-        event.getChannel().send().message(event.getUser().getNick() + ": " + response.formatted(attackName));
+        try {
+            Thread.sleep(MESSAGE_DELAY_MILLIS);
+            event.getChannel().send().message(event.getUser().getNick() + ": " + response.formatted(attackName));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         return false;
     }
 
