@@ -56,11 +56,14 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push temporary Docker image
+        if: github.actor != 'dependabot[bot]'
         run: docker push ghcr.io/${{ github.repository }}/ircbot:temp
 
   integration-test:
     runs-on: ubuntu-latest
     needs: build
+    # Dependabot's token cannot publish the image consumed by this job.
+    if: github.actor != 'dependabot[bot]'
 
     services:
       ircd:
