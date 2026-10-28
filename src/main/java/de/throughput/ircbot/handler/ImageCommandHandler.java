@@ -310,7 +310,7 @@ public class ImageCommandHandler implements CommandHandler {
                 "prompt", prompt,
                 "width", 1024,
                 "height", 768,
-                "steps", 28,
+                "steps", 4,
                 "n", 1,
                 "response_format", "base64"
         );

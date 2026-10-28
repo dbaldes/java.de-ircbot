@@ -19,6 +19,6 @@ class ImageCommandHandlerTest {
 
         assertThat(requestBody).containsEntry("model", "Rundiffusion/Juggernaut-Lightning-Flux");
         assertThat(requestBody).containsEntry("response_format", "base64");
-        assertThat(requestBody).containsEntry("steps", 28);
+        assertThat(requestBody).containsEntry("steps", 4);
     }
 }
