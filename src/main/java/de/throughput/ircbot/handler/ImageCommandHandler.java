@@ -73,7 +73,7 @@ public class ImageCommandHandler implements CommandHandler {
             @Value("${together.apiKey}") String apiKey,
             @Value("${image.saveDirectory}") String imageSaveDirectory,
             @Value("${image.urlPrefix}") String imageUrlPrefix,
-            @Value("${image.model.name:Qwen/Qwen-Image}") String imageModelName,
+            @Value("${image.model.name:Rundiffusion/Juggernaut-Lightning-Flux}") String imageModelName,
             @Value("${image.model.cooldown.seconds:100}") long cooldownSeconds) {
         this.simpleAiService = simpleAiService;
         this.apiKey = apiKey;
@@ -310,6 +310,7 @@ public class ImageCommandHandler implements CommandHandler {
                 "prompt", prompt,
                 "width", 1024,
                 "height", 768,
+                "steps", 28,
                 "n", 1,
                 "response_format", "base64"
         );
