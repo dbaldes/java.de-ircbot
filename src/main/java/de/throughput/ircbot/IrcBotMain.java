@@ -83,6 +83,8 @@ public class IrcBotMain {
                 config.getListenerManager().addListener(new ListenerAdapter() {
                     @Override
                     public void onConnect(ConnectEvent event) {
+                        // Set Libera's bot user mode before the configured auto-join runs.
+                        event.getBot().sendIRC().mode(event.getBot().getNick(), "+B");
                         // disable deaf_commonchan
                         event.getBot().sendIRC().mode(event.getBot().getNick(), "-c");
                     }
